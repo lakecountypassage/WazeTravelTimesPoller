@@ -29,3 +29,5 @@ To get your Waze UID:
 1. Signup for Waze for Cities (formerly Waze CCP)
 2. Signup for access to the Waze Traffic View tool
 3. Request your Traffic View Tool feed ID (BUID) from Waze
+
+**## README UNDER CONSTRUCTION ##**
