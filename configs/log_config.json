@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "simple": {
+      "format": "%(message)s"
+    },
+    "complex": {
+      "format": "%(levelname)-8s | %(asctime)s | %(name)s | %(module)-17s | %(funcName)-17s | %(lineno)3d | %(message)s"
+    }
+  },
+  "handlers": {
+    "console": {
+      "level": "DEBUG",
+      "class": "logging.StreamHandler",
+      "formatter": "complex",
+      "stream": "ext://sys.stdout"
+    },
+    "file": {
+      "level": "DEBUG",
+      "class": "logging.handlers.RotatingFileHandler",
+      "formatter": "complex",
+      "filename": "../logs/waze.log",
+      "maxBytes": 5120000,
+      "backupCount": 10
+    },
+    "file_error": {
+      "level": "WARNING",
+      "class": "logging.handlers.RotatingFileHandler",
+      "formatter": "complex",
+      "filename": "../logs/waze_errors.log",
+      "maxBytes": 512000,
+      "backupCount": 3
+    }
+  },
+  "loggers": {},
+  "root": {
+    "handlers": [
+      "console",
+      "file",
+      "file_error"
+    ],
+    "level": "DEBUG"
+  }
+}
