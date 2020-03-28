@@ -1,13 +1,13 @@
-CREATE TABLE `travel_times` (
-	`rid`	INTEGER NOT NULL,
-	`c_travel_time`	integer,
-	`h_travel_time`	integer,
-	`c_travel_time_min`	integer,
-	`h_travel_time_min`	integer,
-	`congested`	integer,
-	`congested_percent`	integer,
-	`jam_level`	integer,
-	`date`	text,
-	`time`	text,
-	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+CREATE TABLE "travel_times" (
+	"route_id"	INTEGER NOT NULL,
+	"current_tt"	integer,
+	"historical_tt"	integer,
+	"current_tt_min"	integer,
+	"historical_tt_min"	integer,
+	"congested_bool"	integer,
+	"congested_percent"	integer,
+	"jam_level"	integer,
+	"tt_date"	text,
+	"tt_time"	text,
+	"id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 );
