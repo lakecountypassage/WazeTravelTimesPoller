@@ -30,7 +30,7 @@ def write_routes(route_details, db):
     c = db.cursor()
     # insert route data
     try:
-        c.execute("""SELECT rid FROM routes WHERE rid = ?""", (route_details[0],))
+        c.execute("""SELECT route_id FROM routes WHERE route_id = ?""", (route_details[0],))
         r = c.fetchone()
 
         if r is None:
@@ -46,8 +46,8 @@ def write_data(travel_time, db):
     # insert travel time data
     try:
         logging.info(travel_time)
-        c.execute("""INSERT INTO travel_times (rid, c_travel_time, h_travel_time, c_travel_time_min, h_travel_time_min,
-                   congested, congested_percent, jam_level, date, time) VALUES (?,?,?,?,?,?,?,?,?,?)""", travel_time)
+        c.execute("""INSERT INTO travel_times (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
+                   congested_bool, congested_percent, jam_level, tt_date, tt_time) VALUES (?,?,?,?,?,?,?,?,?,?)""", travel_time)
     except Exception as e:
         logging.exception(e)
         pass
@@ -55,27 +55,27 @@ def write_data(travel_time, db):
 
 def congestion_table(congested, rid, ddate, ttime, c_travel_time_min, h_travel_time_min, db):
     c = db.cursor()
-    c.execute("""SELECT rid FROM routes_congested WHERE rid = ?""", (rid,))
+    c.execute("""SELECT route_id FROM routes_congested WHERE route_id = ?""", (rid,))
     one = c.fetchone()
 
     if one is None:
         if congested:
-            c.execute("""INSERT INTO routes_congested (rid, ddate, ttime, 
-                        c_travel_time_min, h_travel_time_min) VALUES (?,?,?,?,?)""",
+            c.execute("""INSERT INTO routes_congested (route_id, congested_date, congested_time, 
+                        current_tt_min, historical_tt_min) VALUES (?,?,?,?,?)""",
                       (rid, ddate, ttime, c_travel_time_min, h_travel_time_min))
     else:
         logging.debug(f'exists in congestion db: {rid}')
         if congested:
             logging.debug(f'continues to be congested: {rid}')
-            c.execute("""UPDATE routes_congested SET c_travel_time_min = ?, 
-                        h_travel_time_min = ? WHERE rid = ?""", (c_travel_time_min, h_travel_time_min, rid))
+            c.execute("""UPDATE routes_congested SET current_tt_min = ?, 
+                        historical_tt_min = ? WHERE route_id = ?""", (c_travel_time_min, h_travel_time_min, rid))
         else:
-            c.execute("""DELETE FROM routes_congested WHERE rid = ?""", (rid,))
+            c.execute("""DELETE FROM routes_congested WHERE route_id = ?""", (rid,))
 
 
 def congestion_counter(db):
     c = db.cursor()
-    c.execute("""SELECT rid FROM routes_congested""")
+    c.execute("""SELECT route_id FROM routes_congested""")
     one = c.fetchone()
 
     if one is None:

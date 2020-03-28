@@ -35,10 +35,10 @@ def build_email(db):
     string += '<tr><th>RID</th><th>Road</th><th>To/From</th><th>Current Time</th><th>Historic Time</th><th>Since</th></tr>'
 
     c = db.cursor()
-    c.execute('''SELECT routes_congested.rid, c_travel_time_min, h_travel_time_min, 
-                    route_name, route_from, route_to, ddate, ttime
+    c.execute('''SELECT routes_congested.route_id, current_tt_min, historical_tt_min, 
+                    route_name, route_from, route_to, congested_date, congested_time
                     FROM routes_congested
-                    INNER JOIN routes ON routes_congested.rid=routes.rid''')
+                    INNER JOIN routes ON routes_congested.route_id=routes.route_id''')
     all = c.fetchall()
 
     for each in all:
