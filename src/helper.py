@@ -38,12 +38,12 @@ def check_congestion(time_now, time_historic, congested_percent):
 def read_json(file=None):
     if file is None:
         with open(persistence_file, 'r') as f:
-            tmp = json.load(f)
+            json_file = json.load(f)
     else:
         with open(file, 'r') as f:
-            tmp = json.load(f)
+            json_file = json.load(f)
 
-    return tmp
+    return json_file
 
 
 def counter_reset():
@@ -53,17 +53,17 @@ def counter_reset():
 
 
 def persistence_update(key, value, operator):
-    tmp = read_json()
+    json_file = read_json()
 
     if operator is 'add':
-        tmp[key] += value
+        json_file[key] += value
     elif operator is 'equals':
-        tmp[key] = value
+        json_file[key] = value
 
     with open(persistence_file, 'w') as f:
-        json.dump(tmp, f, indent=2)
+        json.dump(json_file, f, indent=2)
 
-    return tmp
+    return json_file
 
 
 if __name__ == '__main__':

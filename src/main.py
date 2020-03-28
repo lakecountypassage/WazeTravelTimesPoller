@@ -138,7 +138,7 @@ def process_data(data, db):
 
 
 def run(url, uid, db):
-    # get data from website #
+    # get data from website
     data = download_data.get_data_from_website(url)
     timestamp = int(data['updateTime'])
     ddate = helper.timestamp_to_date(timestamp)
@@ -201,7 +201,3 @@ if __name__ == '__main__':
                     logging.error(e)
 
     logging.debug("<-------- End -------->")
-
-# TODO add more for irregularites
-#     TODO add more logging
-#     TODO add more comments

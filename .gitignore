@@ -1,3 +1,4 @@
 /.idea/
 /tests
 /configs/config_lcdot.ini
+/src/__pycache__/
