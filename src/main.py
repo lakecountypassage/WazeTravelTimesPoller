@@ -53,24 +53,24 @@ def write_data(travel_time, db):
         pass
 
 
-def congestion_table(congested, rid, ddate, ttime, c_travel_time_min, h_travel_time_min, db):
+def congestion_table(congested, route_id, congested_date, congested_time, current_tt_min, historical_tt_min, db):
     c = db.cursor()
-    c.execute("""SELECT route_id FROM routes_congested WHERE route_id = ?""", (rid,))
+    c.execute("""SELECT route_id FROM routes_congested WHERE route_id = ?""", (route_id,))
     one = c.fetchone()
 
     if one is None:
         if congested:
             c.execute("""INSERT INTO routes_congested (route_id, congested_date, congested_time, 
                         current_tt_min, historical_tt_min) VALUES (?,?,?,?,?)""",
-                      (rid, ddate, ttime, c_travel_time_min, h_travel_time_min))
+                      (route_id, congested_date, congested_time, current_tt_min, historical_tt_min))
     else:
-        logging.debug(f'exists in congestion db: {rid}')
+        logging.debug(f'exists in congestion db: {route_id}')
         if congested:
-            logging.debug(f'continues to be congested: {rid}')
+            logging.debug(f'continues to be congested: {route_id}')
             c.execute("""UPDATE routes_congested SET current_tt_min = ?, 
-                        historical_tt_min = ? WHERE route_id = ?""", (c_travel_time_min, h_travel_time_min, rid))
+                        historical_tt_min = ? WHERE route_id = ?""", (current_tt_min, historical_tt_min, route_id))
         else:
-            c.execute("""DELETE FROM routes_congested WHERE route_id = ?""", (rid,))
+            c.execute("""DELETE FROM routes_congested WHERE route_id = ?""", (route_id,))
 
 
 def congestion_counter(db):
@@ -96,8 +96,8 @@ def congestion_counter(db):
 def process_data(data, db):
     counter = 0
 
-    ddate = helper.timestamp_to_date(data['updateTime'])
-    ttime = helper.timestamp_to_time(data['updateTime'])
+    tt_date = helper.timestamp_to_date(data['updateTime'])
+    tt_time = helper.timestamp_to_time(data['updateTime'])
 
     # parse out only routes
     routes = data['routes']
@@ -105,27 +105,27 @@ def process_data(data, db):
     # run through the routes for data
     for route in routes:
         counter += 1
-        rid = route['id']
+        route_id = route['id']
         route_name = route['name']
         route_from = route['fromName']
         route_to = route['toName']
-        rtype = route['type']
+        route_type = route['type']
         length = route['length']
 
-        c_travel_time = route['time']
-        h_travel_time = route['historicTime']
+        current_tt = route['time']
+        historical_tt = route['historicTime']
         jam_level = route['jamLevel']
 
-        c_travel_time_min = helper.time_to_minutes(c_travel_time)
-        h_travel_time_min = helper.time_to_minutes(h_travel_time)
+        current_tt_min = helper.time_to_minutes(current_tt)
+        historical_tt_min = helper.time_to_minutes(historical_tt)
 
-        congested = helper.check_congestion(c_travel_time, h_travel_time, CONGESTED_PERCENT)
-        congestion_table(congested, rid, ddate, ttime, c_travel_time_min, h_travel_time_min, db)
+        congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
+        congestion_table(congested_bool, route_id, tt_date, tt_time, current_tt_min, historical_tt_min, db)
 
-        route_details = (rid, route_name, route_from, route_to, rtype, length)
+        route_details = (route_id, route_name, route_from, route_to, route_type, length)
 
-        travel_time = (rid, c_travel_time, h_travel_time, c_travel_time_min, h_travel_time_min,
-                       congested, CONGESTED_PERCENT, jam_level, ddate, ttime)
+        travel_time = (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
+                       congested_bool, CONGESTED_PERCENT, jam_level, tt_date, tt_time)
 
         # write data
         try:
@@ -141,11 +141,11 @@ def run(url, uid, db):
     # get data from website
     data = download_data.get_data_from_website(url)
     timestamp = int(data['updateTime'])
-    ddate = helper.timestamp_to_date(timestamp)
-    ttime = helper.timestamp_to_time(timestamp)
+    tt_date = helper.timestamp_to_date(timestamp)
+    tt_time = helper.timestamp_to_time(timestamp)
 
     logging.info(f"Waze feed Epoch Time: {timestamp}")
-    logging.info(f'Waze feed Date/Time : {ddate} {ttime}')
+    logging.info(f'Waze feed Date/Time : {tt_date} {tt_time}')
 
     # check to make sure data is good before proceeding
     try:
