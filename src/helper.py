@@ -4,7 +4,7 @@ import os
 import sys
 from datetime import datetime
 
-config_file = 'config_lcdot.ini'
+config_file = 'config.ini'
 
 
 def is_frozen():
