@@ -1,7 +1,7 @@
 # Waze Travel Times Poller
-**Lake County Division of Transportation (Illinois)** - www.lakecountyil.gov/transportation
+**Lake County Division of Transportation (Illinois)** - [Lake County DOT](https://www.lakecountyil.gov/transportation)
 
-**Lake County PASSAGE** - www.lakecountypassage.com
+**Lake County PASSAGE** - [Lake County PASSAGE](https://www.lakecountypassage.com)
 
 Disclaimer: This program was created for the Lake County PASSAGE system. Please use at your own discretion.
 
@@ -15,6 +15,13 @@ so it could be easily deployed on Windows or Linux. The plan is to add support b
 **Note: LCDOT welcomes any modifications or enhancements that can benefit the system and code will be 
 periodically reviewed and merged.**
 
+Contacts:
+- [Ryan Legare (TMC Manger, Developer)](mailto:rlegare@lakecountyil.gov?subject=[GitHub Waze Travel Times Poller])
+- [Justin Effinger P.E. (Engineer, ITS/Signals)](mailto:jeffinger@lakecountyil.gov?subject=[GitHub Waze Travel Times Poller])
+
+---
+
+
 You will need to get a Waze Traffic View BUID for use with this program.
 To get your Waze UID:
 1. Signup for Waze for Cities (formerly Waze CCP)
@@ -27,7 +34,7 @@ To get your Waze UID:
 To use this program there are several options:
 
 On Windows:
-1. Download the Zip file from here: https://github.com/lakecountypassage/WazeTravelTimesPoller/releases/download/0.1/WazeTravelTimesPoller.zip
+1. Download the Zip file from here: [Release v0.1](https://github.com/lakecountypassage/WazeTravelTimesPoller/releases/download/0.1/WazeTravelTimesPoller.zip)
 2. Unzip the package
 3. Update the values in the configs\config.ini file
     - Specifically, make sure you add in your travel times BUID from Waze, 
@@ -64,7 +71,7 @@ On Linux:
 ---
 
 To browse the data:
-1. Download and install 'DB Browser for SQLite' https://sqlitebrowser.org/
+1. Download and install [DB Browser for SQLite](https://sqlitebrowser.org/)
 2. Open the database \database\waze_travel_times.db
 3. Choose 'Browse data' and navigate to the table you want to look at
 
