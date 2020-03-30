@@ -16,8 +16,8 @@ so it could be easily deployed on Windows or Linux. The plan is to add support b
 periodically reviewed and merged.**
 
 Contacts:
-- [Ryan Legare (TMC Manger, Developer)](mailto:rlegare@lakecountyil.gov?subject=[GitHub Waze Travel Times Poller])
-- [Justin Effinger P.E. (Engineer, ITS/Signals)](mailto:jeffinger@lakecountyil.gov?subject=[GitHub Waze Travel Times Poller])
+- [Ryan Legare (TMC Manger, Developer)](mailto:rlegare@lakecountyil.gov)
+- [Justin Effinger P.E. (Engineer, ITS/Signals)](mailto:jeffinger@lakecountyil.gov)
 
 ---
 
