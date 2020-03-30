@@ -36,7 +36,7 @@ def build_email(db):
 
     c = db.cursor()
     c.execute('''SELECT routes_congested.route_id, current_tt_min, historical_tt_min, 
-                    route_name, route_from, route_to, congested_date, congested_time
+                    route_name, route_from, route_to, congested_date_time
                     FROM routes_congested
                     INNER JOIN routes ON routes_congested.route_id=routes.route_id''')
     all = c.fetchall()
@@ -49,7 +49,6 @@ def build_email(db):
         route_from = each[4]
         route_to = each[5]
         ddate = each[6]
-        ttime = each[7]
 
         string += '<tr>'
         string += f'<td>{rid}</td>'
@@ -57,7 +56,7 @@ def build_email(db):
         string += f'<td>{route_from} to {route_to}</td>'
         string += f'<td>{c_min}</td>'
         string += f'<td>{h_min}</td>'
-        string += f'<td>{ddate} at {ttime}</td>'
+        string += f'<td>{ddate}</td>'
         string += '</tr>'
 
     string += "</table>"

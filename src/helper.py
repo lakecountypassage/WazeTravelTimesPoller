@@ -2,9 +2,9 @@ import json
 import logging
 import os
 import sys
-import time
+from datetime import datetime
 
-config_file = 'config.ini'
+config_file = 'config_lcdot.ini'
 
 
 def is_frozen():
@@ -39,12 +39,8 @@ def get_logging_filename():
     return log_filename, log_error_filename
 
 
-def timestamp_to_date(timestamp):
-    return time.strftime("%m/%d/%Y", time.localtime(timestamp / 1000))
-
-
-def timestamp_to_time(timestamp):
-    return time.strftime("%H:%M:%S", time.localtime(timestamp / 1000))
+def timestamp_to_datetime(timestamp):
+    return datetime.fromtimestamp(timestamp/1000.0).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
 
 def time_to_minutes(time_now):

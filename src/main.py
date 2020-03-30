@@ -56,22 +56,22 @@ def write_data(travel_time, db):
     try:
         logging.info(travel_time)
         c.execute("""INSERT INTO travel_times (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
-                   congested_bool, congested_percent, jam_level, tt_date, tt_time) VALUES (?,?,?,?,?,?,?,?,?,?)""", travel_time)
+                   congested_bool, congested_percent, jam_level, tt_date_time) VALUES (?,?,?,?,?,?,?,?,?)""", travel_time)
     except Exception as e:
         logging.exception(e)
         pass
 
 
-def congestion_table(congested, route_id, congested_date, congested_time, current_tt_min, historical_tt_min, db):
+def congestion_table(congested, route_id, congested_date_time, current_tt_min, historical_tt_min, db):
     c = db.cursor()
     c.execute("""SELECT route_id FROM routes_congested WHERE route_id = ?""", (route_id,))
     one = c.fetchone()
 
     if one is None:
         if congested:
-            c.execute("""INSERT INTO routes_congested (route_id, congested_date, congested_time, 
-                        current_tt_min, historical_tt_min) VALUES (?,?,?,?,?)""",
-                      (route_id, congested_date, congested_time, current_tt_min, historical_tt_min))
+            c.execute("""INSERT INTO routes_congested (route_id, congested_date_time, 
+                        current_tt_min, historical_tt_min) VALUES (?,?,?,?)""",
+                      (route_id, congested_date_time, current_tt_min, historical_tt_min))
     else:
         logging.debug(f'exists in congestion db: {route_id}')
         if congested:
@@ -105,8 +105,7 @@ def congestion_counter(db):
 def process_data(data, db):
     counter = 0
 
-    tt_date = helper.timestamp_to_date(data['updateTime'])
-    tt_time = helper.timestamp_to_time(data['updateTime'])
+    tt_date_time = helper.timestamp_to_datetime(data['updateTime'])
 
     # parse out only routes
     routes = data['routes']
@@ -129,12 +128,12 @@ def process_data(data, db):
         historical_tt_min = helper.time_to_minutes(historical_tt)
 
         congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
-        congestion_table(congested_bool, route_id, tt_date, tt_time, current_tt_min, historical_tt_min, db)
+        congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, db)
 
         route_details = (route_id, route_name, route_from, route_to, route_type, length)
 
         travel_time = (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
-                       congested_bool, CONGESTED_PERCENT, jam_level, tt_date, tt_time)
+                       congested_bool, CONGESTED_PERCENT, jam_level, tt_date_time)
 
         # write data
         try:
@@ -150,11 +149,10 @@ def run(url, uid, db):
     # get data from website
     data = download_data.get_data_from_website(url)
     timestamp = int(data['updateTime'])
-    tt_date = helper.timestamp_to_date(timestamp)
-    tt_time = helper.timestamp_to_time(timestamp)
+    tt_date_time = helper.timestamp_to_datetime(timestamp)
 
     logging.info(f"Waze feed Epoch Time: {timestamp}")
-    logging.info(f'Waze feed Date/Time : {tt_date} {tt_time}')
+    logging.info(f'Waze feed Date/Time : {tt_date_time}')
 
     # check to make sure data is good before proceeding
     try:
