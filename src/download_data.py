@@ -6,7 +6,7 @@ import urllib.request
 import helper
 
 config = configparser.ConfigParser(allow_no_value=True)
-config.read(helper.config_file)
+config.read(helper.get_config_path())
 
 
 def get_data_from_website(url):

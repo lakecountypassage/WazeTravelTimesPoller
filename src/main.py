@@ -3,6 +3,7 @@ import configparser
 import json
 import logging
 import logging.config
+import os
 
 import db_conn
 import download_data
@@ -12,18 +13,26 @@ import send_email
 
 # use config file, not database
 config = configparser.ConfigParser(allow_no_value=True)
-config.read(helper.config_file)
+config.read(helper.get_config_path())
 
 CONGESTED_PERCENT = config.getint('Settings', 'CongestionPercent')
 CONGESTION_EMAIL = False
 
 # add logging
-with open(helper.log_config, "r", encoding="utf-8") as f:
+with open(helper.get_log_config_path(), "r", encoding="utf-8") as f:
     x = json.load(f)
+    log_filename = helper.get_logging_filename()[0]
+    log_error_filename = helper.get_logging_filename()[1]
+    x['handlers']['file']['filename'] = log_filename
+    x['handlers']['file_error']['filename'] = log_error_filename
 
 logging.config.dictConfig(x)
 
 logging.debug("<-------- Start -------->")
+
+logging.debug(f'Config path: {helper.get_config_path()}')
+logging.debug(f'Log config path: {helper.get_log_config_path()}')
+logging.debug(f'Persistence path: {helper.get_persistence_path()}')
 
 
 def write_routes(route_details, db):
@@ -166,7 +175,7 @@ if __name__ == '__main__':
 
     logging.info(f'Congested percent: {CONGESTED_PERCENT}')
 
-    database_string = config['Settings']['DatabaseURL']
+    database_string = os.path.join(helper.get_db_path(), config['Settings']['DatabaseURL'])
     waze_url_uids = config["WazeUIDS"]
     waze_url_prefix = config['Settings']['WazeURLPrefix']
 

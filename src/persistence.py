@@ -6,7 +6,7 @@ import helper
 import send_email
 
 config = configparser.ConfigParser(allow_no_value=True)
-config.read(helper.config_file)
+config.read(helper.get_config_path())
 
 
 def check_persistence_for_buids(buid):
@@ -16,14 +16,14 @@ def check_persistence_for_buids(buid):
         if uid['buid'] == buid:
             exists = True
 
-    if exists == False:
+    if not exists:
         persistence_json['buids'].append({
             "buid": buid,
             "counter": 0,
             "last_update": 0
         })
 
-        with open(helper.persistence_file, 'w') as f:
+        with open(helper.get_persistence_path(), 'w') as f:
             json.dump(persistence_json, f, indent=2)
 
 
@@ -49,7 +49,7 @@ def check_update_time(uid, timestamp):
                         logging.exception(e)
 
                 buid["counter"] += 1
-                with open(helper.persistence_file, 'w') as f:
+                with open(helper.get_persistence_path(), 'w') as f:
                     json.dump(read_json, f, indent=2)
 
                 raise Exception("Data already exists in database")
@@ -59,7 +59,7 @@ def check_update_time(uid, timestamp):
                 logging.debug(f"Time since last update {time_since_update}")
                 buid["counter"] = 0
                 buid["last_update"] = timestamp
-                with open(helper.persistence_file, 'w') as f:
+                with open(helper.get_persistence_path(), 'w') as f:
                     json.dump(read_json, f, indent=2)
 
 

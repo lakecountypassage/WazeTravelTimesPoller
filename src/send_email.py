@@ -11,7 +11,7 @@ from email.mime.text import MIMEText
 import helper
 
 config = configparser.ConfigParser(allow_no_value=True)
-config.read(helper.config_file)
+config.read(helper.get_config_path())
 
 EMAIL_USER = config["EmailSettings"]["Username"]
 EMAIL_PWD = config["EmailSettings"]["Password"]

@@ -20,7 +20,7 @@
       "level": "DEBUG",
       "class": "logging.handlers.RotatingFileHandler",
       "formatter": "complex",
-      "filename": "../logs/waze.log",
+      "filename": "waze.log",
       "maxBytes": 5120000,
       "backupCount": 10
     },
@@ -28,7 +28,7 @@
       "level": "WARNING",
       "class": "logging.handlers.RotatingFileHandler",
       "formatter": "complex",
-      "filename": "../logs/waze_errors.log",
+      "filename": "waze_errors.log",
       "maxBytes": 512000,
       "backupCount": 3
     }

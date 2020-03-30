@@ -1,10 +1,42 @@
 import json
 import logging
+import os
+import sys
 import time
 
-config_file = r'../configs/config.ini'
-log_config = r'../configs/log_config.json'
-persistence_file = r'../persistence/persistence.json'
+config_file = 'config.ini'
+
+
+def is_frozen():
+    # determine if application is a script file or frozen exe
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+    elif __file__:
+        application_path = os.path.abspath('..')
+
+    return application_path
+
+
+def get_config_path():
+    return os.path.join(is_frozen(), 'configs\\' + config_file)
+
+
+def get_log_config_path():
+    return os.path.join(is_frozen(), 'configs\\log_config.json')
+
+
+def get_persistence_path():
+    return os.path.join(is_frozen(), 'persistence\\persistence.json')
+
+
+def get_db_path():
+    return os.path.join(is_frozen(), 'database')
+
+
+def get_logging_filename():
+    log_filename = os.path.join(is_frozen(), 'logs\\waze.log')
+    log_error_filename = os.path.join(is_frozen(), 'logs\\waze_errors.log')
+    return log_filename, log_error_filename
 
 
 def timestamp_to_date(timestamp):
@@ -37,7 +69,7 @@ def check_congestion(time_now, time_historic, congested_percent):
 
 def read_json(file=None):
     if file is None:
-        with open(persistence_file, 'r') as f:
+        with open(get_persistence_path(), 'r') as f:
             json_file = json.load(f)
     else:
         with open(file, 'r') as f:
@@ -60,7 +92,7 @@ def persistence_update(key, value, operator):
     elif operator is 'equals':
         json_file[key] = value
 
-    with open(persistence_file, 'w') as f:
+    with open(get_persistence_path(), 'w') as f:
         json.dump(json_file, f, indent=2)
 
     return json_file
