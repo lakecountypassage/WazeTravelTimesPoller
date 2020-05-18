@@ -34,17 +34,42 @@ logging.debug(f'Config path: {helper.get_config_path()}')
 logging.debug(f'Log config path: {helper.get_log_config_path()}')
 logging.debug(f'Persistence path: {helper.get_persistence_path()}')
 
+# SQL
+sql_routes_check = """SELECT route_id FROM routes WHERE route_id = ?"""
+sql_routes_insert = """INSERT INTO routes VALUES (?,?,?,?,?,?)"""
+
+sql_write_tt = """INSERT INTO travel_times (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
+                   congested_bool, congested_percent, jam_level, tt_date_time) VALUES (?,?,?,?,?,?,?,?,?)"""
+
+sql_congested_check = """SELECT route_id FROM routes_congested WHERE route_id = ?"""
+sql_congested_insert = """INSERT INTO routes_congested (route_id, congested_date_time, 
+                        current_tt_min, historical_tt_min) VALUES (?,?,?,?)"""
+sql_congested_update = """UPDATE routes_congested SET current_tt_min = ?, historical_tt_min = ? WHERE route_id = ?"""
+sql_congested_remove = """DELETE FROM routes_congested WHERE route_id = ?"""
+sql_congested_counter = """SELECT route_id FROM routes_congested"""
+
+USE_POSTGRES = config.getboolean('Postgres', 'use_postgres')
+if USE_POSTGRES:
+    sql_routes_check = sql_routes_check.replace("?", "%s")
+    sql_routes_insert = sql_routes_insert.replace("?", "%s")
+    sql_write_tt = sql_write_tt.replace("?", "%s")
+    sql_congested_check = sql_congested_check.replace("?", "%s")
+    sql_congested_insert = sql_congested_insert.replace("?", "%s")
+    sql_congested_update = sql_congested_update.replace("?", "%s")
+    sql_congested_remove = sql_congested_remove.replace("?", "%s")
+    sql_congested_counter = sql_congested_counter.replace("?", "%s")
+
 
 def write_routes(route_details, db):
     c = db.cursor()
     # insert route data
     try:
-        c.execute("""SELECT route_id FROM routes WHERE route_id = ?""", (route_details[0],))
+        c.execute(sql_routes_check, (route_details[0],))
         r = c.fetchone()
 
         if r is None:
             logging.debug(route_details)
-            c.execute("""INSERT INTO routes VALUES (?,?,?,?,?,?)""", route_details)
+            c.execute(sql_routes_insert, route_details)
     except Exception as e:
         logging.exception(e)
         pass
@@ -55,8 +80,7 @@ def write_data(travel_time, db):
     # insert travel time data
     try:
         logging.info(travel_time)
-        c.execute("""INSERT INTO travel_times (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
-                   congested_bool, congested_percent, jam_level, tt_date_time) VALUES (?,?,?,?,?,?,?,?,?)""", travel_time)
+        c.execute(sql_write_tt, travel_time)
     except Exception as e:
         logging.exception(e)
         pass
@@ -64,27 +88,24 @@ def write_data(travel_time, db):
 
 def congestion_table(congested, route_id, congested_date_time, current_tt_min, historical_tt_min, db):
     c = db.cursor()
-    c.execute("""SELECT route_id FROM routes_congested WHERE route_id = ?""", (route_id,))
+    c.execute(sql_congested_check, (route_id,))
     one = c.fetchone()
 
     if one is None:
         if congested:
-            c.execute("""INSERT INTO routes_congested (route_id, congested_date_time, 
-                        current_tt_min, historical_tt_min) VALUES (?,?,?,?)""",
-                      (route_id, congested_date_time, current_tt_min, historical_tt_min))
+            c.execute(sql_congested_insert, (route_id, congested_date_time, current_tt_min, historical_tt_min))
     else:
         logging.debug(f'exists in congestion db: {route_id}')
         if congested:
             logging.debug(f'continues to be congested: {route_id}')
-            c.execute("""UPDATE routes_congested SET current_tt_min = ?, 
-                        historical_tt_min = ? WHERE route_id = ?""", (current_tt_min, historical_tt_min, route_id))
+            c.execute(sql_congested_update, (current_tt_min, historical_tt_min, route_id))
         else:
-            c.execute("""DELETE FROM routes_congested WHERE route_id = ?""", (route_id,))
+            c.execute(sql_congested_remove, (route_id,))
 
 
 def congestion_counter(db):
     c = db.cursor()
-    c.execute("""SELECT route_id FROM routes_congested""")
+    c.execute(sql_congested_counter)
     one = c.fetchone()
 
     if one is None:
@@ -173,11 +194,10 @@ if __name__ == '__main__':
 
     logging.info(f'Congested percent: {CONGESTED_PERCENT}')
 
-    database_string = os.path.join(helper.get_db_path(), config['Settings']['DatabaseURL'])
     waze_url_uids = config["WazeUIDS"]
     waze_url_prefix = config['Settings']['WazeURLPrefix']
 
-    with db_conn.DatabaseConnection(database_string) as db:
+    with db_conn.DatabaseConnection() as db:
         for uid in waze_url_uids:
             full_url = f"{waze_url_prefix}{uid}"
             logging.info(f'Waze URL: {full_url}')
