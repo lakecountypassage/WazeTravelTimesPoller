@@ -3,7 +3,6 @@ import configparser
 import json
 import logging
 import logging.config
-import os
 
 import db_conn
 import download_data
@@ -58,6 +57,9 @@ if USE_POSTGRES:
     sql_congested_update = sql_congested_update.replace("?", "%s")
     sql_congested_remove = sql_congested_remove.replace("?", "%s")
     sql_congested_counter = sql_congested_counter.replace("?", "%s")
+    logging.info("Using Postgres database")
+else:
+    logging.info("Using Sqlite database")
 
 
 def write_routes(route_details, db):
