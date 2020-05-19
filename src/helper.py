@@ -1,4 +1,5 @@
 import json
+import configparser
 import logging
 import os
 import sys
@@ -92,6 +93,18 @@ def persistence_update(key, value, operator):
         json.dump(json_file, f, indent=2)
 
     return json_file
+
+
+config = configparser.ConfigParser(allow_no_value=True)
+config.read(get_config_path())
+
+
+def sql_format(sql):
+    use_postgres = config.getboolean('Postgres', 'use_postgres')
+    if use_postgres:
+        sql = sql.replace("?", "%s")
+
+    return sql
 
 
 if __name__ == '__main__':

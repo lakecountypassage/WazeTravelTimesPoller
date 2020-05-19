@@ -47,31 +47,17 @@ sql_congested_update = """UPDATE routes_congested SET current_tt_min = ?, histor
 sql_congested_remove = """DELETE FROM routes_congested WHERE route_id = ?"""
 sql_congested_counter = """SELECT route_id FROM routes_congested"""
 
-USE_POSTGRES = config.getboolean('Postgres', 'use_postgres')
-if USE_POSTGRES:
-    sql_routes_check = sql_routes_check.replace("?", "%s")
-    sql_routes_insert = sql_routes_insert.replace("?", "%s")
-    sql_write_tt = sql_write_tt.replace("?", "%s")
-    sql_congested_check = sql_congested_check.replace("?", "%s")
-    sql_congested_insert = sql_congested_insert.replace("?", "%s")
-    sql_congested_update = sql_congested_update.replace("?", "%s")
-    sql_congested_remove = sql_congested_remove.replace("?", "%s")
-    sql_congested_counter = sql_congested_counter.replace("?", "%s")
-    logging.info("Using Postgres database")
-else:
-    logging.info("Using Sqlite database")
-
 
 def write_routes(route_details, db):
     c = db.cursor()
     # insert route data
     try:
-        c.execute(sql_routes_check, (route_details[0],))
+        c.execute(helper.sql_format(sql_routes_check), (route_details[0],))
         r = c.fetchone()
 
         if r is None:
             logging.debug(route_details)
-            c.execute(sql_routes_insert, route_details)
+            c.execute(helper.sql_format(sql_routes_insert), route_details)
     except Exception as e:
         logging.exception(e)
         pass
@@ -82,7 +68,7 @@ def write_data(travel_time, db):
     # insert travel time data
     try:
         logging.info(travel_time)
-        c.execute(sql_write_tt, travel_time)
+        c.execute(helper.sql_format(sql_write_tt), travel_time)
     except Exception as e:
         logging.exception(e)
         pass
@@ -90,24 +76,26 @@ def write_data(travel_time, db):
 
 def congestion_table(congested, route_id, congested_date_time, current_tt_min, historical_tt_min, db):
     c = db.cursor()
-    c.execute(sql_congested_check, (route_id,))
+    c.execute(helper.sql_format(sql_congested_check), (route_id,))
     one = c.fetchone()
 
     if one is None:
         if congested:
-            c.execute(sql_congested_insert, (route_id, congested_date_time, current_tt_min, historical_tt_min))
+            c.execute(helper.sql_format(sql_congested_insert),
+                      (route_id, congested_date_time, current_tt_min, historical_tt_min))
     else:
         logging.debug(f'exists in congestion db: {route_id}')
         if congested:
             logging.debug(f'continues to be congested: {route_id}')
-            c.execute(sql_congested_update, (current_tt_min, historical_tt_min, route_id))
+            c.execute(helper.sql_format(sql_congested_update),
+                      (current_tt_min, historical_tt_min, route_id))
         else:
-            c.execute(sql_congested_remove, (route_id,))
+            c.execute(helper.sql_format(sql_congested_remove), (route_id,))
 
 
 def congestion_counter(db):
     c = db.cursor()
-    c.execute(sql_congested_counter)
+    c.execute(helper.sql_format(sql_congested_counter))
     one = c.fetchone()
 
     if one is None:
