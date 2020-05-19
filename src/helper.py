@@ -18,15 +18,15 @@ def is_frozen():
 
 
 def get_config_path():
-    return os.path.join(is_frozen(), 'configs\\' + config_file)
+    return os.path.join(is_frozen(), 'configs' + os.sep + config_file)
 
 
 def get_log_config_path():
-    return os.path.join(is_frozen(), 'configs\\log_config.json')
+    return os.path.join(is_frozen(), 'configs' + os.sep + 'log_config.json')
 
 
 def get_persistence_path():
-    return os.path.join(is_frozen(), 'persistence\\persistence.json')
+    return os.path.join(is_frozen(), 'persistence' + os.sep + 'persistence.json')
 
 
 def get_db_path():
@@ -34,8 +34,8 @@ def get_db_path():
 
 
 def get_logging_filename():
-    log_filename = os.path.join(is_frozen(), 'logs\\waze.log')
-    log_error_filename = os.path.join(is_frozen(), 'logs\\waze_errors.log')
+    log_filename = os.path.join(is_frozen(), 'logs' + os.sep + 'waze.log')
+    log_error_filename = os.path.join(is_frozen(), 'logs' + os.sep + 'waze_errors.log')
     return log_filename, log_error_filename
 
 
