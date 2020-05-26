@@ -22,6 +22,10 @@ def get_config_path():
     return os.path.join(is_frozen(), 'configs' + os.sep + config_file)
 
 
+def get_config_folder_path():
+    return os.path.join(is_frozen(), 'configs')
+
+
 def get_log_config_path():
     return os.path.join(is_frozen(), 'configs' + os.sep + 'log_config.json')
 

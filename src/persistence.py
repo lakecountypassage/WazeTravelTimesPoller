@@ -8,6 +8,10 @@ import send_email
 config = configparser.ConfigParser(allow_no_value=True)
 config.read(helper.get_config_path())
 
+send_oath = config.getboolean("EmailSettings", "SendWithOath")
+if send_oath:
+    import send_email_oath
+
 
 def check_persistence_for_buids(buid):
     exists = False
@@ -44,7 +48,16 @@ def check_update_time(uid, timestamp):
                     logging.error(text)
 
                     try:
-                        send_email.run('Feed Error', text, attach='../logs/waze_errors.log')
+                        subject = 'Feed Error'
+                        attachment = '../logs/waze_errors.log'
+
+                        if send_oath:
+                            logging.info('Sending with oauth email')
+                            send_email_oath.send_message(subject, text, attach=attachment)
+                        else:
+                            logging.info('Sending with regular email')
+                            send_email.run(subject, text, attach=attachment)
+
                     except Exception as e:
                         logging.exception(e)
 

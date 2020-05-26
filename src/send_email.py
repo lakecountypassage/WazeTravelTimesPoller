@@ -13,6 +13,10 @@ import helper
 config = configparser.ConfigParser(allow_no_value=True)
 config.read(helper.get_config_path())
 
+send_oath = config.getboolean("EmailSettings", "SendWithOath")
+if send_oath:
+    import send_email_oath
+
 EMAIL_USER = config["EmailSettings"]["Username"]
 EMAIL_PWD = config["EmailSettings"]["Password"]
 
@@ -63,7 +67,15 @@ def build_email(db):
     string += '</body></html>'
 
     try:
-        run('Congestion Summary', string, attach=None, type='html')
+        subject = 'Congestion Summary'
+
+        if send_oath:
+            logging.info('Sending with oauth email')
+            send_email_oath.send_message(subject, string)
+        else:
+            logging.info('Sending with regular email')
+            run('Congestion Summary', string, attach=None, type='html')
+
     except Exception as e:
         logging.exception(e)
 
