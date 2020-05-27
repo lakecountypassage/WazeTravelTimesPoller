@@ -185,10 +185,12 @@ if __name__ == '__main__':
             try:
                 persistence.check_persistence_for_buids(uid)
                 run(full_url, uid, db)
-                congestion_counter(db)
             except Exception as e:
                 logging.exception(e)
                 continue
+
+        # run congestion counter check after processing the data
+        congestion_counter(db)
 
         # commit all changes
         db.commit()

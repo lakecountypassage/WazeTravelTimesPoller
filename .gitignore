@@ -1,4 +1,5 @@
 /.idea/
 /tests
 /configs/config_lcdot.ini
+/configs/client_secret.json
 /src/__pycache__/
