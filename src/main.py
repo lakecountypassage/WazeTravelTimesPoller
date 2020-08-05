@@ -192,6 +192,7 @@ if __name__ == '__main__':
     waze_url_prefix = config['Settings']['WazeURLPrefix']
 
     omit_routes = helper.get_omit_routes_list()
+    logging.info(f'Omit these routes from congestion alerting: {omit_routes}')
 
     with db_conn.DatabaseConnection() as db:
         for uid in waze_url_uids:
