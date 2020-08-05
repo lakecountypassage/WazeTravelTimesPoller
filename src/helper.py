@@ -57,6 +57,15 @@ def check_for_data_integrity(data):
         raise Exception('Data did not pass the integrity check, cannot proceed')
 
 
+def get_omit_routes_list():
+    omit_list = []
+    omit_routes = config['OmitRoutes']
+    for x in omit_routes:
+        omit_list.append(int(x))
+
+    return omit_list
+
+
 def check_congestion(time_now, time_historic, congested_percent):
     congestion_threshold = time_historic * (int(congested_percent) / 100)
 

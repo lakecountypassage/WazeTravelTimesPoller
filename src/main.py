@@ -139,7 +139,11 @@ def process_data(data, db):
         historical_tt_min = helper.time_to_minutes(historical_tt)
 
         congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
-        congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, db)
+
+        if route_id in omit_routes:
+            logging.debug(f"Omitting route from the congestion alerting: {route_id}")
+        else:
+            congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, db)
 
         route_details = (route_id, route_name, route_from, route_to, route_type, length)
 
@@ -186,6 +190,8 @@ if __name__ == '__main__':
 
     waze_url_uids = config["WazeUIDS"]
     waze_url_prefix = config['Settings']['WazeURLPrefix']
+
+    omit_routes = helper.get_omit_routes_list()
 
     with db_conn.DatabaseConnection() as db:
         for uid in waze_url_uids:
