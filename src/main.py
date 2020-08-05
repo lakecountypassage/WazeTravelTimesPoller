@@ -79,18 +79,26 @@ def congestion_table(congested, route_id, congested_date_time, current_tt_min, h
     c.execute(helper.sql_format(sql_congested_check), (route_id,))
     one = c.fetchone()
 
-    if one is None:
-        if congested:
-            c.execute(helper.sql_format(sql_congested_insert),
-                      (route_id, congested_date_time, current_tt_min, historical_tt_min))
-    else:
-        logging.debug(f'exists in congestion db: {route_id}')
-        if congested:
-            logging.debug(f'continues to be congested: {route_id}')
-            c.execute(helper.sql_format(sql_congested_update),
-                      (current_tt_min, historical_tt_min, route_id))
-        else:
+    # remove routes in table if omit
+    if route_id in omit_routes:
+        logging.info(f"Omitting routes from congestion alerting: {route_id}")
+        if one is not None:
+            logging.info(f"Removing omitted from congestion table: {route_id}")
             c.execute(helper.sql_format(sql_congested_remove), (route_id,))
+    else:
+        if one is None:
+            if congested:
+                c.execute(helper.sql_format(sql_congested_insert),
+                          (route_id, congested_date_time, current_tt_min, historical_tt_min))
+        else:
+            logging.debug(f'exists in congestion db: {route_id}')
+            if congested:
+                logging.debug(f'continues to be congested: {route_id}')
+                c.execute(helper.sql_format(sql_congested_update),
+                          (current_tt_min, historical_tt_min, route_id))
+            else:
+                c.execute(helper.sql_format(sql_congested_remove), (route_id,))
+
 
 
 def congestion_counter(db):
@@ -139,11 +147,7 @@ def process_data(data, db):
         historical_tt_min = helper.time_to_minutes(historical_tt)
 
         congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
-
-        if route_id in omit_routes:
-            logging.debug(f"Omitting route from the congestion alerting: {route_id}")
-        else:
-            congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, db)
+        congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, db)
 
         route_details = (route_id, route_name, route_from, route_to, route_type, length)
 
