@@ -65,6 +65,14 @@ def get_omit_routes_list():
 
     return omit_list
 
+def get_omit_feed_list():
+    omit_list = []
+    omit_routes = config['OmitUids']
+    for x in omit_routes:
+        omit_list.append(x)
+
+    return omit_list
+
 
 def check_congestion(time_now, time_historic, congested_percent):
     congestion_threshold = time_historic * (int(congested_percent) / 100)

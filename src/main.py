@@ -74,16 +74,16 @@ def write_data(travel_time, db):
         pass
 
 
-def congestion_table(congested, route_id, congested_date_time, current_tt_min, historical_tt_min, db):
+def congestion_table(congested, route_id, congested_date_time, current_tt_min, historical_tt_min, omit, db):
     c = db.cursor()
     c.execute(helper.sql_format(sql_congested_check), (route_id,))
     one = c.fetchone()
 
     # remove routes in table if omit
-    if route_id in omit_routes:
-        logging.info(f"Omitting routes from congestion alerting: {route_id}")
+    if omit:
+        logging.debug(f"Omitting routes from congestion alerting: {route_id}")
         if one is not None:
-            logging.info(f"Removing omitted from congestion table: {route_id}")
+            logging.debug(f"Removing omitted from congestion table: {route_id}")
             c.execute(helper.sql_format(sql_congested_remove), (route_id,))
     else:
         if one is None:
@@ -121,7 +121,7 @@ def congestion_counter(db):
         helper.persistence_update('congestion_counter', 0, 'equals')
 
 
-def process_data(data, db):
+def process_data(uid, data, db):
     counter = 0
 
     tt_date_time = helper.timestamp_to_datetime(data['updateTime'])
@@ -143,11 +143,15 @@ def process_data(data, db):
         historical_tt = route['historicTime']
         jam_level = route['jamLevel']
 
+        omit = False
+        if route_id in omit_routes or uid in omit_feeds:
+            omit = True
+
         current_tt_min = helper.time_to_minutes(current_tt)
         historical_tt_min = helper.time_to_minutes(historical_tt)
 
         congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
-        congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, db)
+        congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, omit, db)
 
         route_details = (route_id, route_name, route_from, route_to, route_type, length)
 
@@ -185,7 +189,7 @@ def run(url, uid, db):
     persistence.check_update_time(uid, timestamp)
 
     # run main
-    process_data(data, db)
+    process_data(uid, data, db)
 
 
 if __name__ == '__main__':
@@ -197,6 +201,9 @@ if __name__ == '__main__':
 
     omit_routes = helper.get_omit_routes_list()
     logging.info(f'Omit these routes from congestion alerting: {omit_routes}')
+
+    omit_feeds = helper.get_omit_feed_list()
+    logging.info(f'Omit these feeds from congestion alerting: {omit_feeds}')
 
     with db_conn.DatabaseConnection() as db:
         for uid in waze_url_uids:
