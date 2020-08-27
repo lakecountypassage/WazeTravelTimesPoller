@@ -5,5 +5,7 @@ CREATE TABLE "routes" (
 	"route_to"	TEXT,
 	"type"	TEXT,
 	"length"	INTEGER,
+	`feed_id`	TEXT,
+	`feed_name`	TEXT,
 	PRIMARY KEY("route_id")
 );
