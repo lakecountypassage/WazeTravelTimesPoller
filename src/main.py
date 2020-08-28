@@ -34,8 +34,9 @@ logging.debug(f'Log config path: {helper.get_log_config_path()}')
 logging.debug(f'Persistence path: {helper.get_persistence_path()}')
 
 # SQL
-sql_routes_check = """SELECT route_id FROM routes WHERE route_id = ?"""
-sql_routes_insert = """INSERT INTO routes VALUES (?,?,?,?,?,?)"""
+sql_routes_check = """SELECT route_id, feed_id, feed_name FROM routes WHERE route_id = ?"""
+sql_routes_insert = """INSERT INTO routes VALUES (?,?,?,?,?,?,?,?)"""
+sql_route_update = """UPDATE routes SET feed_id = ?, feed_name = ? WHERE route_id = ?"""
 
 sql_write_tt = """INSERT INTO travel_times (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
                    congested_bool, congested_percent, jam_level, tt_date_time) VALUES (?,?,?,?,?,?,?,?,?)"""
@@ -58,6 +59,16 @@ def write_routes(route_details, db):
         if r is None:
             logging.debug(route_details)
             c.execute(helper.sql_format(sql_routes_insert), route_details)
+
+        # add feed id and name if they don't exist
+        else:
+            if r[1] is None or r[2] is None:
+                logging.debug('updating route to include feed id and name')
+                route_update = (route_details[6], route_details[7], route_details[0])
+                c.execute(helper.sql_format(sql_route_update), route_update)
+            else:
+                logging.debug("route up to date")
+
     except Exception as e:
         logging.exception(e)
         pass
@@ -100,7 +111,6 @@ def congestion_table(congested, route_id, congested_date_time, current_tt_min, h
                 c.execute(helper.sql_format(sql_congested_remove), (route_id,))
 
 
-
 def congestion_counter(db):
     c = db.cursor()
     c.execute(helper.sql_format(sql_congested_counter))
@@ -129,6 +139,9 @@ def process_data(uid, data, db):
     # parse out only routes
     routes = data['routes']
 
+    # get the feed name
+    feed_name = data['name']
+
     # run through the routes for data
     for route in routes:
         counter += 1
@@ -153,7 +166,7 @@ def process_data(uid, data, db):
         congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
         congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, omit, db)
 
-        route_details = (route_id, route_name, route_from, route_to, route_type, length)
+        route_details = (route_id, route_name, route_from, route_to, route_type, length, uid, feed_name)
 
         travel_time = (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
                        congested_bool, CONGESTED_PERCENT, jam_level, tt_date_time)
