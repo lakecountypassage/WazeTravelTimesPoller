@@ -7,7 +7,7 @@ Disclaimer: This program was created for the Lake County PASSAGE system. Please 
 
 **As of August 28th, 2020 -- there was a database schema change in the code. If you update the code and not the database structure,
 the program will fail. Specfically, the 'routes' table has new text columns 'feed_id' and 'feed_name'. This is for better tracking of
-multiple feeds
+multiple feeds.**
 
 The purpose of this program is to help Waze CCP members process raw travel times data
 provided by Waze. The program will get data from the Waze TT feed, process the data, archive it,
