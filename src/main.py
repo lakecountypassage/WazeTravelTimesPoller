@@ -66,8 +66,6 @@ def write_routes(route_details, db):
                 logging.debug('updating route to include feed id and name')
                 route_update = (route_details[6], route_details[7], route_details[0])
                 c.execute(helper.sql_format(sql_route_update), route_update)
-            else:
-                logging.debug("route up to date")
 
     except Exception as e:
         logging.exception(e)
