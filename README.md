@@ -5,7 +5,7 @@
 
 Disclaimer: This program was created for the Lake County PASSAGE system. Please use at your own discretion.
 
-**As of August 28th, 2020 -- there was a database schema change in the code. If you update the code and not the database structure,
+**As of August 28th, 2020 -- there was a database schema change. If you update the code and not the database structure,
 the program will fail. Specfically, the 'routes' table has new text columns 'feed_id' and 'feed_name'. This is for better tracking of
 multiple feeds.**
 
