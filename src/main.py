@@ -189,7 +189,6 @@ def process_data(uid, data, db):
             logging.exception(e)
 
     logging.info(f"Route counter: {counter}")
-    route_errors.route_error_counter()
 
 
 def run(url, uid, db):
@@ -243,6 +242,9 @@ if __name__ == '__main__':
 
         # run congestion counter check after processing the data
         congestion_counter(db)
+
+        # run route error counter check after processing the data
+        route_errors.route_error_counter()
 
         # commit all changes
         db.commit()
