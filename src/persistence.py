@@ -12,46 +12,6 @@ send_oath = config.getboolean("EmailSettings", "SendWithOath")
 if send_oath:
     import send_email_oath
 
-def route_errors(route_id, add):
-    err_json = helper.read_json('../persistence/route_errors.json')
-
-    # send email alert
-    if err_json['counter'] == 10:
-        alert_bad_routes(json.dumps(err_json, indent=2))
-        err_json['counter'] = 0
-
-    if add:
-        err_json['counter'] += 1
-        if route_id not in err_json['routes']:
-            err_json['routes'].append(route_id)
-    else:
-        if route_id in err_json['routes']:
-            err_json['routes'].remove(route_id)
-
-    route_count = len(err_json['routes'])
-    if route_count == 0:
-        err_json['counter'] = 0
-
-    with open('../persistence/route_errors.json', 'w') as f:
-        json.dump(err_json, f, indent=2)
-
-    print(err_json)
-
-
-def alert_bad_routes(text):
-    try:
-        subject = 'Routes Error'
-
-        if send_oath:
-            logging.info('Sending with oauth email')
-            send_email_oath.send_message(subject, text, attach=None)
-        else:
-            logging.info('Sending with regular email')
-            send_email.run(subject, text, attach=None)
-
-    except Exception as e:
-        logging.exception(e)
-
 
 def check_persistence_for_buids(buid):
     exists = False

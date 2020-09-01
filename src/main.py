@@ -8,6 +8,7 @@ import db_conn
 import download_data
 import helper
 import persistence
+import route_errors
 import send_email
 
 # use config file, not database
@@ -160,10 +161,10 @@ def process_data(uid, data, db):
 
         if current_tt == -1:
             logging.warning(f'Route {route_id} is showing -1, skipping for now')
-            persistence.route_errors(route_id, add=True)
+            route_errors.route_errors(route_id, add=True)
             continue # move to next route, do not archive
         elif route_id in err_route:
-            persistence.route_errors(route_id, add=False)
+            route_errors.route_errors(route_id, add=False)
 
         omit = False
         if route_id in omit_routes or uid in omit_feeds:
@@ -188,6 +189,7 @@ def process_data(uid, data, db):
             logging.exception(e)
 
     logging.info(f"Route counter: {counter}")
+    route_errors.route_error_counter()
 
 
 def run(url, uid, db):
