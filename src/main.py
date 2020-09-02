@@ -160,10 +160,10 @@ def process_data(uid, data, db):
 
         if current_tt == -1:
             logging.warning(f'Route {route_id} is showing -1, skipping for now')
-            route_errors.route_errors(route_id, route_name, add=True)
+            route_errors.set_route_errors(route_id, route_name, add=True)
             continue # move to next route, do not archive
         elif route_id in err_list:
-            route_errors.route_errors(route_id, route_name, add=False)
+            route_errors.set_route_errors(route_id, route_name, add=False)
 
         omit = False
         if route_id in omit_routes or uid in omit_feeds:

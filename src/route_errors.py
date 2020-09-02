@@ -25,7 +25,7 @@ def get_route_errors():
     return err_list
 
 
-def route_errors(route_id, route_name, add):
+def set_route_errors(route_id, route_name, add):
     err_json = helper.read_json(route_errors_json)
     err_dict = dict()
 
