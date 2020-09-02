@@ -7,5 +7,6 @@ CREATE TABLE "routes" (
 	"length"	INTEGER,
 	`feed_id`	TEXT,
 	`feed_name`	TEXT,
+	`deleted`	INTEGER,
 	PRIMARY KEY("route_id")
 );
