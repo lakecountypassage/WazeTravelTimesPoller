@@ -15,15 +15,35 @@ if send_oath:
 route_errors_json = '../persistence/route_errors.json'
 
 
-def route_errors(route_id, add):
+def get_route_errors():
     err_json = helper.read_json(route_errors_json)
+    err_route = err_json['routes']
+    err_list = []
+    for err in err_route:
+        err_list.append(err['route_id'])
+
+    return err_list
+
+
+def route_errors(route_id, route_name, add):
+    err_json = helper.read_json(route_errors_json)
+    err_dict = dict()
+
+    err_list = get_route_errors()
 
     if add:
-        if route_id not in err_json['routes']:
-            err_json['routes'].append(route_id)
+        if route_id not in err_list:
+            err_dict['route_id'] = route_id
+            err_dict['route_name'] = route_name
+            err_json['routes'].append(err_dict)
     else:
-        if route_id in err_json['routes']:
-            err_json['routes'].remove(route_id)
+        if route_id in err_list:
+            for d in err_json['routes']:
+                if d['route_id'] == route_id:
+                    err_json['routes'].remove(d)
+
+
+            # err_json['routes'].remove(route_id)
 
     with open(route_errors_json, 'w') as f:
         json.dump(err_json, f, indent=2)

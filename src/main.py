@@ -142,8 +142,7 @@ def process_data(uid, data, db):
     feed_name = data['name']
 
     # get current route errors
-    err_json = helper.read_json('../persistence/route_errors.json')
-    err_route = err_json['routes']
+    err_list = route_errors.get_route_errors()
 
     # run through the routes for data
     for route in routes:
@@ -161,10 +160,10 @@ def process_data(uid, data, db):
 
         if current_tt == -1:
             logging.warning(f'Route {route_id} is showing -1, skipping for now')
-            route_errors.route_errors(route_id, add=True)
+            route_errors.route_errors(route_id, route_name, add=True)
             continue # move to next route, do not archive
-        elif route_id in err_route:
-            route_errors.route_errors(route_id, add=False)
+        elif route_id in err_list:
+            route_errors.route_errors(route_id, route_name, add=False)
 
         omit = False
         if route_id in omit_routes or uid in omit_feeds:
