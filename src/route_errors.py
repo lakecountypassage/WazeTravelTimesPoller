@@ -81,5 +81,20 @@ def alert_bad_routes(text):
         logging.exception(e)
 
 
+def remove_deleted_routes(routes):
+    update = False
+    err_json = helper.read_json(route_errors_json)
+
+    for err in err_json['routes']:
+        if err['route_id'] in routes:
+            update = True
+            logging.info(f"Removing route {err['route_id']} from route errors persistence")
+            err_json['routes'].remove(err)
+
+    if update:
+        with open(route_errors_json, 'w') as f:
+            json.dump(err_json, f, indent=2)
+
+
 if __name__ == '__main__':
     pass

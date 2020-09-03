@@ -124,6 +124,8 @@ def sql_format(sql):
     use_postgres = config.getboolean('Postgres', 'use_postgres')
     if use_postgres:
         sql = sql.replace("?", "%s")
+        sql = sql.replace("0", "false")
+        sql = sql.replace("1", "true")
 
     return sql
 
