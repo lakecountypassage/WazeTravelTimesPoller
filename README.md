@@ -38,7 +38,7 @@ To get your Waze UID:
 To use this program there are several options:
 
 On Windows:
-1. Download the Zip file from here: [Release v0.1](https://github.com/lakecountypassage/WazeTravelTimesPoller/releases/download/0.1/WazeTravelTimesPoller.zip)
+1. Download the Zip file from here: [Release v0.3](https://github.com/lakecountypassage/WazeTravelTimesPoller/releases/download/0.3/WazeTravelTimesPoller.zip)
 2. Unzip the package
 3. Update the values in the configs\config.ini file
     - Specifically, make sure you add in your travel times BUID from Waze, 
