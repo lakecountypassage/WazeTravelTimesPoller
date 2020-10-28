@@ -34,6 +34,10 @@ def get_persistence_path():
     return os.path.join(is_frozen(), 'persistence' + os.sep + 'persistence.json')
 
 
+def get_route_errors_path():
+    return os.path.join(is_frozen(), 'persistence' + os.sep + 'route_errors.json')
+
+
 def get_db_path():
     return os.path.join(is_frozen(), 'database')
 

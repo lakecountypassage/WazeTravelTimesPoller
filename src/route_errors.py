@@ -12,7 +12,7 @@ send_oath = config.getboolean("EmailSettings", "SendWithOath")
 if send_oath:
     import send_email_oath
 
-route_errors_json = '../persistence/route_errors.json'
+route_errors_json = helper.get_route_errors_path()
 
 
 def get_route_errors():
