@@ -59,8 +59,8 @@ def route_error_counter():
         err_json['counter'] += 1
 
     if err_json['counter'] == 15:
-        err_json['counter'] = 0
         alert_bad_routes(json.dumps(err_json))
+        err_json['counter'] = 0
 
     with open(route_errors_json, 'w') as f:
         json.dump(err_json, f, indent=2)
