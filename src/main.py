@@ -233,6 +233,7 @@ if __name__ == '__main__':
     waze_url_prefix = config['Settings']['WazeURLPrefix']
 
     skip_routes = helper.get_skip_routes_list()
+    route_errors.remove_deleted_routes(skip_routes)
     logging.info(f'Skip these routes completely: {skip_routes}')
 
     omit_routes = helper.get_omit_routes_list()
