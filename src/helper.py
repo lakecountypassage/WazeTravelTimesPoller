@@ -61,6 +61,15 @@ def check_for_data_integrity(data):
         raise Exception('Data did not pass the integrity check, cannot proceed')
 
 
+def get_skip_routes_list():
+    skip_list = []
+    skip_routes = config['SkipRoutes']
+    for x in skip_routes:
+        skip_list.append(int(x))
+
+    return skip_list
+
+
 def get_omit_routes_list():
     omit_list = []
     omit_routes = config['OmitRoutes']

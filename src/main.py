@@ -166,6 +166,9 @@ def process_data(uid, data, db):
 
         route_list.append(route_id)
 
+        if route_id in skip_routes:
+            continue
+
         if current_tt == -1:
             logging.warning(f'Route {route_id} is showing -1, skipping for now')
             route_errors.set_route_errors(route_id, route_name, add=True)
@@ -228,6 +231,9 @@ if __name__ == '__main__':
 
     waze_url_uids = config["WazeUIDS"]
     waze_url_prefix = config['Settings']['WazeURLPrefix']
+
+    skip_routes = helper.get_skip_routes_list()
+    logging.info(f'Skip these routes completely: {skip_routes}')
 
     omit_routes = helper.get_omit_routes_list()
     logging.info(f'Omit these routes from congestion alerting: {omit_routes}')
