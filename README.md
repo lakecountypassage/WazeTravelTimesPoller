@@ -3,7 +3,7 @@
 
 **Lake County PASSAGE** - [Lake County PASSAGE](https://www.lakecountypassage.com)
 
-Disclaimer: This program was created for the Lake County PASSAGE system. Please use at your own discretion.
+Disclaimer: This program was created for the Lake County PASSAGE system. The program provided as-is. Please use at your own discretion.
 
 **As of August 28th, 2020 -- there was a database schema change. If you update the code and not the database structure,
 the program will fail. Specfically, the 'routes' table has new text columns 'feed_id' and 'feed_name'. This is for better tracking of
@@ -13,15 +13,15 @@ The purpose of this program is to help Waze CCP members process raw travel times
 provided by Waze. The program will get data from the Waze TT feed, process the data, archive it,
 and send email alerts for any segments that are "congested".
 
-This was originally built to work on Linux + Postgres, but we scaled it back to use SQLite, 
-so it could be easily deployed on Windows or Linux. The plan is to add support back for Postgres soon.
+This was originally built to work on Linux + Postgres, but we added support for SQLite, 
+so it could be easily deployed on Windows or Linux. You can use this program without intalling any other dependecies or programs and it does not require a SQL server.
 
 **Note: LCDOT welcomes any modifications or enhancements that can benefit the system and code will be 
 periodically reviewed and merged.**
 
 Contacts:
 - [Ryan Legare (TMC Manger, Developer)](mailto:rlegare@lakecountyil.gov?subject=[GitHub%20Waze%20TT%20Poller]) 
-- [Justin Effinger P.E. (Engineer, ITS/Signals)](mailto:jeffinger@lakecountyil.govsubject=[GitHub%20Waze%20TT%20Poller])
+- [Jon Nelson P.E. (Engineer of Traffic, ITS/Signals)](mailto:jpnelson@lakecountyil.govsubject=[GitHub%20Waze%20TT%20Poller])
 
 ---
 
@@ -38,7 +38,7 @@ To get your Waze UID:
 To use this program there are several options:
 
 On Windows:
-1. Download the Zip file from here: [Release v0.3](https://github.com/lakecountypassage/WazeTravelTimesPoller/releases/download/0.3/WazeTravelTimesPoller.zip)
+1. Download the Zip file from here: [Release v0.4](https://github.com/lakecountypassage/WazeTravelTimesPoller/releases/download/0.4/WazeTravelTimesPoller.zip)
 2. Unzip the package
 3. Update the values in the configs\config.ini file
     - Specifically, make sure you add in your travel times BUID from Waze, 
@@ -57,8 +57,9 @@ On Windows:
 4. Run 'run.bat' or \src\main.py (this is a one-time pull of travel times)
 5. (Optionally) Set a Windows Scheduled Task to run the program as often as you want travel times
 
----
+Note: Windows limits scheduled tasks to 5min intervals. Waze updates their travel times in ~2min intervals. LCDOT uses Linux (Cron). If there are enough requests we can add a scheduled interval task to the program. In this case, you'd run the program and just keep it running, it would pull at whatever interval you set. This feature may be added later and the documentation will be updated accordingly. 
 
+---
 
 On Linux:
 1. Download and install Python3
