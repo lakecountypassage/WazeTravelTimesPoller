@@ -85,7 +85,7 @@ To browse the data:
 TODO:
 1. Add user interface for updating configs
 2. Add built-in configurable scheduler (Windows limits to 5 minute minimum, may not be enough)
-3. Add back support for Postgres and MSSQL
+3. Add support for MSSQL
 4. Build some queries for users to more easily query their data
 
 ---
