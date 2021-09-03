@@ -68,7 +68,7 @@ On Linux:
 3. Update the values in the configs\config.ini file
     - Specifically, make sure you add in your travel times BUID from Waze, 
         (see above for instructions on how to get this value)
-4. Run 'start.bat' or \src\main.py
+4. Run \src\main.py
 5. (Optionally) Set a Cron job to run the program as often as you want travel times, below is 2 min interval
 
 `*/2 * * * * cd /opt/waze/ && /opt/bin/python /opt/waze/src/main.py`
