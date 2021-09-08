@@ -38,10 +38,10 @@ Waze Traffic View: https://www.waze.com/trafficview/
 You will need to get a Waze Traffic View BUID for use with this program.
 To get your Waze UID:
 1. Signup for Waze for Cities (formerly Waze CCP)
-2. Request access to the Waze **Traffic View tool**
-3. Add routes through the Waze Traffic View website
-4. Request access to the Waze **Traffic View Feed**
-5. Get the **broadcasterId (BUID)** from the Traffic View Feed <- you will need this ID for this program
+2. Request access to the Waze **Traffic View tool** through the partner dashboard
+3. Request access to the Waze **Traffic View Feed** through the partner dashboard
+4. Add routes through the Waze Traffic View website
+6. Get the **broadcasterId (BUID)** from the Traffic View Feed (from step #3) <- you will need this ID for this program
 
 ---
 
