@@ -50,6 +50,8 @@ To get your Waze UID:
 **Save this buid for the next steps**
 
 ![buid](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/buid.png)
+
+
 ![broadcasterId](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/broadcasterId.png)
 
 ---
