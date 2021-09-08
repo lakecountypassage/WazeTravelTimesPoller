@@ -28,7 +28,9 @@ Contacts:
 **Links and resources**
 
 Waze for Cities (including sign-up): https://www.waze.com/wazeforcities/
+
 Partner dashboard: https://partnerdash.google.com/waze
+
 Waze Traffic View: https://www.waze.com/trafficview/
 
 ---
