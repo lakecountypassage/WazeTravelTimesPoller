@@ -24,7 +24,8 @@ Contacts:
 - [Jon Nelson P.E. (Engineer of Traffic, ITS/Signals)](mailto:jpnelson@lakecountyil.govsubject=[GitHub%20Waze%20TT%20Poller])
 
 ---
-
+Waze for Cities (including sign-up): https://www.waze.com/wazeforcities/
+Partner dashboard: https://partnerdash.google.com/waze
 
 You will need to get a Waze Traffic View BUID for use with this program.
 To get your Waze UID:
