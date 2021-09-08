@@ -25,7 +25,10 @@ Contacts:
 
 ---
 Waze for Cities (including sign-up): https://www.waze.com/wazeforcities/
+
 Partner dashboard: https://partnerdash.google.com/waze
+
+Waze Traffic View: https://www.waze.com/trafficview/
 
 You will need to get a Waze Traffic View BUID for use with this program.
 To get your Waze UID:
