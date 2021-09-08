@@ -35,15 +35,20 @@ Waze Traffic View: https://www.waze.com/trafficview/
 
 Waze Traffiv View tool and feed webinar: https://youtu.be/mxRKiRpi0mI
 
+Waze Traffic View tool and feed instructions: https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf
+
 ---
 
 You will need to get a Waze Traffic View BUID for use with this program.
 To get your Waze UID:
 1. Signup for Waze for Cities (formerly Waze CCP)
-2. Request access to the Waze **Traffic View tool** through the partner dashboard
-3. Request access to the Waze **Traffic View Feed** through the partner dashboard
-4. Add routes through the Waze Traffic View website
-6. Get the **broadcasterId (BUID)** from the Traffic View Feed (from step #3) <- you will need this ID for this program
+2. Request access to the Waze **Traffic View tool** through the partner dashboard - [instructions](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf)
+3. Request access to the Waze **Traffic View Feed** through the partner dashboard - [instructions](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf)
+4. Add routes through the Waze Traffic View website - [instructions](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf)
+6. Get the **broadcasterId (BUID)** from the Traffic View Feed (from step #3). You will need the ID for this program. Follow the instructions on page [6](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf) to open the JSON feed (Chrome works best for this but any browser will work). You can take the unique string after "buid=" in the URL --OR-- you can find the "broadcasterId" and take the string from there. It will be an 18 character alpha-numeric string. You will need this for the cofiguration in the next steps.
+
+Example:
+https://www.waze.com/rtserver/broadcast/BroadcastRSS?format=JSON&buid=a1b2c3d4e5f6g7h8i9
 
 ---
 
