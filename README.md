@@ -33,6 +33,8 @@ Partner dashboard: https://partnerdash.google.com/waze
 
 Waze Traffic View: https://www.waze.com/trafficview/
 
+Waze Traffiv View tool and feed webinar: https://youtu.be/mxRKiRpi0mI
+
 ---
 
 You will need to get a Waze Traffic View BUID for use with this program.
