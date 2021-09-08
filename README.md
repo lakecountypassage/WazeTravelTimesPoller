@@ -27,15 +27,11 @@ Contacts:
 
 **Links and resources**
 
-Waze for Cities (including sign-up): https://www.waze.com/wazeforcities/
-
-Partner dashboard: https://partnerdash.google.com/waze
-
-Waze Traffic View: https://www.waze.com/trafficview/
-
-Waze Traffiv View tool and feed webinar: https://youtu.be/mxRKiRpi0mI
-
-Waze Traffic View tool and feed instructions: https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf
+Waze for Cities (including sign-up): https://www.waze.com/wazeforcities/ \
+Partner dashboard: https://partnerdash.google.com/waze \
+Waze Traffic View: https://www.waze.com/trafficview/ \
+Waze Traffic View tool and feed webinar: https://youtu.be/mxRKiRpi0mI \
+Waze Traffic View tool and feed [instructions](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf)
 
 ---
 
@@ -59,7 +55,7 @@ To get your Waze UID:
 To use this program there are several options:
 
 On Windows:
-1. Download the Zip file from here: [Release v0.4](https://github.com/lakecountypassage/WazeTravelTimesPoller/releases/download/0.4/WazeTravelTimesPoller.zip)
+1. Download the Zip file from here: [Release v0.5](https://github.com/lakecountypassage/WazeTravelTimesPoller/releases/download/0.5/WazeTravelTimesPoller.zip)
 2. Unzip the package
 3. Update the values in the configs\config.ini file
     - Specifically, make sure you add in your travel times BUID from Waze, 
