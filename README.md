@@ -35,14 +35,16 @@ Waze Traffic View: https://www.waze.com/trafficview/
 
 Waze Traffiv View tool and feed webinar: https://youtu.be/mxRKiRpi0mI
 
+Waze Traffic View tool and feed instructions: https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf
+
 ---
 
 You will need to get a Waze Traffic View BUID for use with this program.
 To get your Waze UID:
 1. Signup for Waze for Cities (formerly Waze CCP)
-2. Request access to the Waze **Traffic View tool** through the partner dashboard
-3. Request access to the Waze **Traffic View Feed** through the partner dashboard
-4. Add routes through the Waze Traffic View website
+2. Request access to the Waze **Traffic View tool** through the partner dashboard - [instructions](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf)
+3. Request access to the Waze **Traffic View Feed** through the partner dashboard - [instructions](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf)
+4. Add routes through the Waze Traffic View website - [instructions](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf)
 6. Get the **broadcasterId (BUID)** from the Traffic View Feed (from step #3) <- you will need this ID for this program
 
 ---
