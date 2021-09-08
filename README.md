@@ -47,8 +47,7 @@ To get your Waze UID:
 4. Add routes through the Waze Traffic View website - [instructions](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf)
 6. Get the **broadcasterId (BUID)** from the Traffic View Feed (from step #3). You will need the ID for this program. Follow the instructions on page [6](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf) to open the JSON feed (Chrome works best for this but any browser will work). You can take the unique string after "buid=" in the URL --OR-- you can find the "broadcasterId" and take the string from there. It will be an 18 character alpha-numeric string. You will need this for the cofiguration in the next steps.
 
-Example:
-https://www.waze.com/rtserver/broadcast/BroadcastRSS?format=JSON&buid=a1b2c3d4e5f6g7h8i9
+![Example](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/buid.png)
 
 ---
 
