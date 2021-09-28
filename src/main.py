@@ -11,6 +11,7 @@ import persistence
 import route_errors
 import send_email
 import deleted_routes
+import db_add_lines
 
 # use config file, not database
 config = configparser.ConfigParser(allow_no_value=True)
@@ -36,9 +37,10 @@ logging.debug(f'Log config path: {helper.get_log_config_path()}')
 logging.debug(f'Persistence path: {helper.get_persistence_path()}')
 
 # SQL
-sql_routes_check = """SELECT route_id, feed_id, feed_name, deleted FROM routes WHERE route_id = ?"""
-sql_routes_insert = """INSERT INTO routes VALUES (?,?,?,?,?,?,?,?,?)"""
+sql_routes_check = """SELECT route_id, feed_id, feed_name, deleted, lines FROM routes WHERE route_id = ?"""
+sql_routes_insert = """INSERT INTO routes VALUES (?,?,?,?,?,?,?,?,?,?)"""
 sql_route_update = """UPDATE routes SET feed_id = ?, feed_name = ? WHERE route_id = ?"""
+sql_route_line_update = """UPDATE routes SET lines = ? WHERE route_id = ?"""
 sql_delete_update = """UPDATE routes SET deleted = ? WHERE route_id = ?"""
 
 sql_write_tt = """INSERT INTO travel_times (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
@@ -73,6 +75,17 @@ def write_routes(route_details, db):
                 logging.debug('updating route to include feed id and name')
                 route_update = (route_details[6], route_details[7], route_details[0])
                 c.execute(helper.sql_format(sql_route_update), route_update)
+
+            # add line data if it doesnt exist
+            lines_does_exist = db_add_lines.get_column(db)
+            if lines_does_exist == 1:
+                if r[4] is None:
+                    logging.debug('updating route to include line data')
+                    line_data = (route_details[9], route_details[0])
+                    c.execute(helper.sql_format(sql_route_line_update), line_data)
+
+            else:
+                logging.error('line column does not exists in the database')
 
     except Exception as e:
         logging.exception(e)
@@ -159,6 +172,7 @@ def process_data(uid, data, db):
         route_to = route['toName']
         route_type = route['type']
         length = route['length']
+        line = route['line']
 
         current_tt = route['time']
         historical_tt = route['historicTime']
@@ -187,7 +201,7 @@ def process_data(uid, data, db):
         congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
         congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, omit, db)
 
-        route_details = (route_id, route_name, route_from, route_to, route_type, length, uid, feed_name, False)
+        route_details = (route_id, route_name, route_from, route_to, route_type, length, uid, feed_name, False, json.dumps(line))
 
         travel_time = (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
                        congested_bool, CONGESTED_PERCENT, jam_level, tt_date_time)
@@ -246,6 +260,12 @@ if __name__ == '__main__':
     route_list = []
 
     with db_conn.DatabaseConnection() as db:
+        # check if lines column exists in the database
+        lines = db_add_lines.get_column(db)
+        # add lines column to database if it doesnt exist
+        if lines == 0:
+            db_add_lines.alter_table(db)
+
         for uid in waze_url_uids:
             full_url = f"{waze_url_prefix}{uid}"
             logging.info(f'Waze URL: {full_url}')

@@ -8,5 +8,6 @@ CREATE TABLE "routes" (
 	`feed_id`	TEXT,
 	`feed_name`	TEXT,
 	`deleted`	INTEGER,
+	`lines`	TEXT,
 	PRIMARY KEY("route_id")
 );
