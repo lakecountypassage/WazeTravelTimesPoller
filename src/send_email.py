@@ -7,6 +7,7 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formataddr
 
 import helper
 
@@ -16,9 +17,6 @@ config.read(helper.get_config_path())
 send_oath = config.getboolean("EmailSettings", "SendWithOath")
 if send_oath:
     import send_email_oath
-
-EMAIL_USER = config["EmailSettings"]["Username"]
-EMAIL_PWD = config["EmailSettings"]["Password"]
 
 
 def get_email_users():
@@ -81,14 +79,19 @@ def build_email(db):
 
 
 def run(subject, body, attach=None, type=None):
+    EMAIL_USER = config["EmailSettings"]["Username"]
+    EMAIL_PWD = config["EmailSettings"]["Password"]
+
     if EMAIL_USER == '' or EMAIL_PWD == '':
         raise Exception("You are missing email username or password")
 
     logging.info('Attempting to send email')
 
-    smtp_ssl_host = 'smtp.gmail.com'
-    smtp_ssl_port = 465
-    sender = 'Waze Travel Times'
+    # smtp_ssl_host = 'smtp.gmail.com'
+    smtp_ssl_host = config.get('EmailSettings', 'SMTP_SSL_Host')
+    smtp_ssl_port = config.getint('EmailSettings', 'SMTP_SSL_Port')
+    nickname = config.get('EmailSettings', 'From_Nickname')
+    sender = formataddr((nickname, config.get('EmailSettings', 'SMTP_Sender')))
     targets = get_email_users()
 
     msg = MIMEMultipart()
