@@ -27,8 +27,8 @@ def get_email_users():
     if not targets:
         return None
     else:
-        email_addresses = ','.join(str(x) for x in targets)
-        return email_addresses
+        # email_addresses = ','.join(str(x) for x in targets)
+        return targets
 
 
 def build_email(db):
@@ -92,13 +92,13 @@ def run(subject, body, attach=None, type=None):
     smtp_ssl_port = config.getint('EmailSettings', 'SMTP_SSL_Port')
     nickname = config.get('EmailSettings', 'From_Nickname')
     sender = formataddr((nickname, config.get('EmailSettings', 'SMTP_Sender')))
-    targets = get_email_users()
+    # targets = get_email_users()
 
     msg = MIMEMultipart()
 
     msg['Subject'] = subject
     msg['From'] = sender
-    msg['To'] = get_email_users()
+    msg['To'] = ', '.join(get_email_users())
 
     if type == 'html':
         msg.attach(MIMEText(body, 'html'))
@@ -117,7 +117,7 @@ def run(subject, body, attach=None, type=None):
 
     server = smtplib.SMTP_SSL(smtp_ssl_host, smtp_ssl_port)
     server.login(EMAIL_USER, EMAIL_PWD)
-    server.sendmail(sender, targets, msg.as_string())
+    server.sendmail(sender, get_email_users(), msg.as_string())
     server.quit()
     logging.info('Email sent')
 
