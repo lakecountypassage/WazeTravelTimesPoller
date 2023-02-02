@@ -263,16 +263,19 @@ if __name__ == '__main__':
         # run route error counter check after processing the data
         route_errors.route_error_counter()
 
-        try:
-            # check for deleted routes
-            # deleted_routes.set_route_list(route_list)
-            del_routes = deleted_routes.DeletedRoutes(db, route_list)
-            del_routes.run()
+        check_deleted = config.getboolean('Settings', 'CheckForDeleted')
+        logging.debug(f'Check for deleted routes: {check_deleted}')
+        if check_deleted:
+            try:
+                # check for deleted routes
+                # deleted_routes.set_route_list(route_list)
+                del_routes = deleted_routes.DeletedRoutes(db, route_list)
+                del_routes.run()
 
-            # remove deleted routes from persistence
-            route_errors.remove_deleted_routes(del_routes.get_deleted_routes())
-        except Exception as e:
-            logging.exception(e)
+                # remove deleted routes from persistence
+                route_errors.remove_deleted_routes(del_routes.get_deleted_routes())
+            except Exception as e:
+                logging.exception(e)
 
         # commit all changes
         db.commit()

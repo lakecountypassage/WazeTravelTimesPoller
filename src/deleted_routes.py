@@ -24,7 +24,7 @@ class DeletedRoutes:
     def get_route_list(self):
         l = []
         for route in self.get_database_routes():
-            l.append(route[0])
+            l.append(str(route[0]))
 
         return l
 
