@@ -32,6 +32,7 @@ Partner hub: https://www.waze.com/partnerhub/ \
 Waze Traffic View: https://www.waze.com/partnerhub/tools-center/traffic-view/ \
 Waze Traffic View tool and feed webinar: https://youtu.be/mxRKiRpi0mI \
 Waze Traffic View tool and feed (old) [instructions](https://github.com/lakecountypassage/WazeTravelTimesPoller/blob/master/docs/Traffic%20View%20Tool%20and%20Feed.pdf)
+
 ---
 
 ### Tutorial Video
