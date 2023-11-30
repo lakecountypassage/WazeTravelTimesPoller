@@ -42,9 +42,6 @@ https://youtu.be/KxE7lL_kQV0
 
 ### Geting the Waze UID:
 
-**Updated 11/30/2023**
-For Gmail email notification, you can use App Passwords provided by Google: https://support.google.com/accounts/answer/185833?sjid=9420807878265006177-NC#. In the configuration file, you would just use the App Password for in the password field. Leave OAuth false.
-
 **Updated 2/2/2023**
 
 You will need to get a Waze Traffic View UID for use with this program.
@@ -109,6 +106,9 @@ On Linux:
 ---
 
 ### Updating the config file:
+
+**Updated 11/30/2023**
+For Gmail email notification, you can use App Passwords provided by Google: https://support.google.com/accounts/answer/185833?sjid=9420807878265006177-NC#. In the configuration file, you would just use the App Password for in the password field. Leave OAuth false.
 
 1. Update the [WazeURLPrefix] as necessary -- **DO NOT** add the UID here
 2. Add your Waze UID/s to the [WazeUIDS] section -- this is a list, so you can just keep adding
