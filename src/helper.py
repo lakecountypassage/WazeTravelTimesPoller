@@ -139,7 +139,6 @@ def sql_format(sql):
         sql = sql.replace("?", "%s")
         sql = sql.replace("0", "false")
         sql = sql.replace("1", "true")
-
     return sql
 
 
