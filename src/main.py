@@ -16,6 +16,7 @@ import deleted_routes
 config = configparser.ConfigParser(allow_no_value=True)
 config.read(helper.get_config_path())
 
+ARCHIVE_DATA = config.getboolean('Settings', 'ArchiveData', fallback=True)
 CONGESTED_PERCENT = config.getint('Settings', 'CongestionPercent')
 CONGESTION_EMAIL = False
 
@@ -195,7 +196,8 @@ def process_data(uid, data, db):
         # write data
         try:
             write_routes(route_details, db)
-            write_data(travel_time, db)
+            if ARCHIVE_DATA:
+                write_data(travel_time, db)
         except Exception as e:
             logging.exception(e)
 
