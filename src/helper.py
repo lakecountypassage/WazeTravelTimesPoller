@@ -30,10 +30,6 @@ def get_log_config_path():
     return os.path.join(is_frozen(), 'configs' + os.sep + 'log_config.json')
 
 
-def get_persistence_path():
-    return os.path.join(is_frozen(), 'persistence' + os.sep + 'persistence.json')
-
-
 def get_route_errors_path():
     return os.path.join(is_frozen(), 'persistence' + os.sep + 'route_errors.json')
 
@@ -98,33 +94,9 @@ def check_congestion(time_now, time_historic, congested_percent):
     return congested
 
 
-def read_json(file=None):
-    if file is None:
-        with open(get_persistence_path(), 'r') as f:
-            json_file = json.load(f)
-    else:
-        with open(file, 'r') as f:
-            json_file = json.load(f)
-
-    return json_file
-
-
-def counter_reset():
-    # reset json counter
-    logging.debug('Reset json counter')
-    persistence_update('counter', 0, 'equals')
-
-
-def persistence_update(key, value, operator):
-    json_file = read_json()
-
-    if operator is 'add':
-        json_file[key] += value
-    elif operator is 'equals':
-        json_file[key] = value
-
-    with open(get_persistence_path(), 'w') as f:
-        json.dump(json_file, f, indent=2)
+def read_json(file):
+    with open(file, 'r') as f:
+        json_file = json.load(f)
 
     return json_file
 

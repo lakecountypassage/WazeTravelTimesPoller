@@ -5,12 +5,11 @@ import logging
 import logging.config
 
 import db_conn
+import deleted_routes
 import download_data
 import helper
-import persistence
 import route_errors
 import send_email
-import deleted_routes
 
 # use config file, not database
 config = configparser.ConfigParser(allow_no_value=True)
@@ -34,7 +33,6 @@ logging.debug("<-------- Start -------->")
 
 logging.debug(f'Config path: {helper.get_config_path()}')
 logging.debug(f'Log config path: {helper.get_log_config_path()}')
-logging.debug(f'Persistence path: {helper.get_persistence_path()}')
 
 # SQL
 sql_routes_check = """SELECT route_id, feed_id, feed_name, deleted FROM routes WHERE route_id = ?"""
@@ -51,6 +49,7 @@ sql_congested_insert = """INSERT INTO routes_congested (route_id, congested_date
 sql_congested_update = """UPDATE routes_congested SET current_tt_min = ?, historical_tt_min = ? WHERE route_id = ?"""
 sql_congested_remove = """DELETE FROM routes_congested WHERE route_id = ?"""
 sql_congested_counter = """SELECT route_id FROM routes_congested"""
+sql_delete_bad_congestion = """DELETE FROM routes_congested WHERE congested_date_time < ?"""
 
 
 def write_routes(route_details, db):
@@ -111,30 +110,43 @@ def congestion_table(congested, route_id, congested_date_time, current_tt_min, h
             logging.debug(f'exists in congestion db: {route_id}')
             if congested:
                 logging.debug(f'continues to be congested: {route_id}')
-                c.execute(helper.sql_format(sql_congested_update),
-                          (current_tt_min, historical_tt_min, route_id))
+                c.execute(helper.sql_format(sql_congested_update), (current_tt_min, historical_tt_min, route_id))
             else:
                 c.execute(helper.sql_format(sql_congested_remove), (route_id,))
 
 
-def congestion_counter(db):
-    c = db.cursor()
-    c.execute(helper.sql_format(sql_congested_counter))
-    one = c.fetchone()
+def delete_bad_congestion():
+    delete_bad_congestion_time_delay = config.getint("Settings", "DeleteStaleCongstedRoutesInMin", fallback=120)
+    logging.debug(f"DeleteStaleCongstedRoutesInMin = {delete_bad_congestion_time_delay}")
+    if delete_bad_congestion_time_delay == 0:
+        logging.info("Not attempting to delete bad congestion routes.")
+        return
 
-    if one is None:
-        helper.persistence_update('congestion_counter', 0, 'equals')
-    else:
-        helper.persistence_update('congestion_counter', 1, 'add')
+    from datetime import datetime, timedelta
+    time_delay = datetime.now() - timedelta(minutes=delete_bad_congestion_time_delay)
+    logging.info(f"Deleting any bad congestion older than: {time_delay}")
+    try:
+        c = db.cursor()
+        sql = helper.sql_format(sql_delete_bad_congestion)
+        c.execute(sql, (time_delay,))
+    except Exception as ex:
+        logging.exception(ex)
 
-    json = helper.read_json()
-    logging.info(f'congestion_counter = {json["congestion_counter"]}')
 
-    congestion_summary_poll = config.getint('Settings', 'CongestionSummaryPoll')
-    if json['congestion_counter'] >= congestion_summary_poll:
-        global CONGESTION_EMAIL
-        CONGESTION_EMAIL = True
-        helper.persistence_update('congestion_counter', 0, 'equals')
+def send_congestion_email():
+    # send email
+    if config.getboolean('EmailSettings', 'SendEmailAlerts', fallback=False) is False:
+        logging.info('Emails are turned off in the cofiguration file.')
+        return
+
+    if send_email.get_email_users() is None:
+        logging.info('Emails are not sending, you have no user recipients.')
+        return
+
+    try:
+        send_email.build_email(db)
+    except Exception as e:
+        logging.error(e)
 
 
 def process_data(uid, data, db):
@@ -174,7 +186,7 @@ def process_data(uid, data, db):
         if current_tt == -1:
             logging.warning(f'Route {route_id} is showing -1, skipping for now')
             route_errors.set_route_errors(route_id, route_name, add=True)
-            continue # move to next route, do not archive
+            continue  # move to next route, do not archive
         elif route_id in err_list:
             route_errors.set_route_errors(route_id, route_name, add=False)
 
@@ -186,12 +198,13 @@ def process_data(uid, data, db):
         historical_tt_min = helper.time_to_minutes(historical_tt)
 
         congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
-        congestion_table(congested_bool, route_id, tt_date_time, current_tt_min, historical_tt_min, omit, db)
+        congestion_table(congested_bool, route_id, tt_date_time, int(current_tt_min), int(historical_tt_min), omit, db)
 
         route_details = (route_id, route_name, route_from, route_to, route_type, length, uid, feed_name, False)
 
-        travel_time = (route_id, current_tt, historical_tt, current_tt_min, historical_tt_min,
-                       congested_bool, CONGESTED_PERCENT, jam_level, tt_date_time)
+        travel_time = (
+        route_id, current_tt, historical_tt, current_tt_min, historical_tt_min, congested_bool, CONGESTED_PERCENT,
+        jam_level, tt_date_time)
 
         # write data
         try:
@@ -202,6 +215,39 @@ def process_data(uid, data, db):
             logging.exception(e)
 
     logging.info(f"Route counter: {counter}")
+
+
+def feed_check_good(timestamp):
+    is_feed_good = True
+
+    feed_delay_error_time = config.getint("Settings", "FeedErrorInMin", fallback=30)
+    if feed_delay_error_time != 0:  # skip error checking if feed_delay_error_time is 0
+        from datetime import datetime, timedelta
+        time_delay = datetime.now() - timedelta(minutes=feed_delay_error_time)
+        logging.debug(f"Checking if the feed is older than: {time_delay}")
+
+        if datetime.fromtimestamp(timestamp / 1000.0) < time_delay:
+            is_feed_good = False
+
+            text = f'It has been over {feed_delay_error_time} min since the last Waze feed update to {uid}.'
+            logging.error(text)
+
+            send_oath = config.getboolean("EmailSettings", "SendWithOath")
+            try:
+                subject = 'Feed Error'
+
+                if send_oath:
+                    logging.info('Sending with oauth email')
+                    import send_email_oath
+                    send_email_oath.send_message(subject, text)
+                else:
+                    logging.info('Sending with regular email')
+                    send_email.run(subject, text)
+
+            except Exception as e:
+                logging.exception(e)
+
+    return is_feed_good
 
 
 def run(url, uid, db):
@@ -216,16 +262,14 @@ def run(url, uid, db):
     # check to make sure data is good before proceeding
     try:
         helper.check_for_data_integrity(data)
-        logging.debug('data pass integrity check')
     except Exception as e:
         logging.exception(e)
         raise
 
-    # check for existing pull #
-    persistence.check_update_time(uid, timestamp)
-
-    # run main
-    process_data(uid, data, db)
+    if feed_check_good(timestamp):
+        process_data(uid, data, db)
+    else:
+        logging.error("Something is wrong with the feed, skipping processing.")
 
 
 if __name__ == '__main__':
@@ -253,14 +297,10 @@ if __name__ == '__main__':
             logging.info(f'Waze URL: {full_url}')
 
             try:
-                persistence.check_persistence_for_buids(uid)
                 run(full_url, uid, db)
             except Exception as e:
                 logging.exception(e)
                 continue
-
-        # run congestion counter check after processing the data
-        congestion_counter(db)
 
         # run route error counter check after processing the data
         route_errors.route_error_counter()
@@ -279,21 +319,13 @@ if __name__ == '__main__':
             except Exception as e:
                 logging.exception(e)
 
-        # commit all changes
-        db.commit()
+        # delete bad congestion
+        delete_bad_congestion()
 
         # send email
-        bool_email = config.getboolean('EmailSettings', 'SendEmailAlerts')
-        if send_email.get_email_users() is None:
-            bool_email = False
+        send_congestion_email()
 
-        if bool_email is False:
-            logging.info('Not sending emails')
-        else:
-            if CONGESTION_EMAIL:
-                try:
-                    send_email.build_email(db)
-                except Exception as e:
-                    logging.error(e)
+        # commit all changes
+        db.commit()
 
     logging.debug("<-------- End -------->")
