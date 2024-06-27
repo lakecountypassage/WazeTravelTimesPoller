@@ -5,8 +5,6 @@ import logging
 import logging.config
 from datetime import datetime, timedelta
 
-from dateutil.parser import parse
-
 import db_conn
 import deleted_routes
 import download_data
@@ -146,7 +144,7 @@ def send_congestion_email():
         return
 
     config_email_delay = config.getint("Settings", "CongestionEmailDelayInMin", fallback=10)
-    last_congestion_email = parse(helper.read_json()['last_congestion_email'])
+    last_congestion_email = datetime.strptime(helper.read_json()['last_congestion_email'], helper.time_format)
 
     # if last sent email is older than now - 10min
     if last_congestion_email > datetime.now() - timedelta(minutes=config_email_delay):
