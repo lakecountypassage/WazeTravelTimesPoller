@@ -1,11 +1,11 @@
-import json
 import configparser
-import logging
+import json
 import os
 import sys
 from datetime import datetime
 
 config_file = 'config.ini'
+time_format = "%Y-%m-%d %H:%M:%S.%f"
 
 
 def is_frozen():
@@ -30,6 +30,10 @@ def get_log_config_path():
     return os.path.join(is_frozen(), 'configs' + os.sep + 'log_config.json')
 
 
+def get_persistence_path():
+    return os.path.join(is_frozen(), 'persistence' + os.sep + 'persistence.json')
+
+
 def get_route_errors_path():
     return os.path.join(is_frozen(), 'persistence' + os.sep + 'route_errors.json')
 
@@ -45,7 +49,7 @@ def get_logging_filename():
 
 
 def timestamp_to_datetime(timestamp):
-    return datetime.fromtimestamp(timestamp/1000.0).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    return datetime.fromtimestamp(timestamp / 1000.0).strftime(time_format)[:-3]
 
 
 def time_to_minutes(time_now):
@@ -74,6 +78,7 @@ def get_omit_routes_list():
 
     return omit_list
 
+
 def get_omit_feed_list():
     omit_list = []
     omit_routes = config['OmitUids']
@@ -94,9 +99,13 @@ def check_congestion(time_now, time_historic, congested_percent):
     return congested
 
 
-def read_json(file):
-    with open(file, 'r') as f:
-        json_file = json.load(f)
+def read_json(file=None):
+    if file is None:
+        with open(get_persistence_path(), 'r') as f:
+            json_file = json.load(f)
+    else:
+        with open(file, 'r') as f:
+            json_file = json.load(f)
 
     return json_file
 

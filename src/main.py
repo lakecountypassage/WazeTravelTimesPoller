@@ -3,6 +3,9 @@ import configparser
 import json
 import logging
 import logging.config
+from datetime import datetime, timedelta
+
+from dateutil.parser import parse
 
 import db_conn
 import deleted_routes
@@ -122,7 +125,6 @@ def delete_bad_congestion():
         logging.info("Not attempting to delete bad congestion routes.")
         return
 
-    from datetime import datetime, timedelta
     time_delay = datetime.now() - timedelta(minutes=delete_bad_congestion_time_delay)
     logging.info(f"Deleting any bad congestion older than: {time_delay}")
     try:
@@ -143,10 +145,39 @@ def send_congestion_email():
         logging.info('Emails are not sending, you have no user recipients.')
         return
 
-    try:
-        send_email.build_email(db)
-    except Exception as e:
-        logging.error(e)
+    config_email_delay = config.getint("Settings", "CongestionEmailDelayInMin", fallback=10)
+    last_congestion_email = parse(helper.read_json()['last_congestion_email'])
+
+    # if last sent email is older than now - 10min
+    if last_congestion_email > datetime.now() - timedelta(minutes=config_email_delay):
+
+        logging.debug(
+            f"Last congestion email was sent at: {last_congestion_email}. "
+            f"Won't send another for email for "
+            f"{config_email_delay - int((datetime.now() - last_congestion_email).total_seconds() / 60)} minute/s.")
+
+    # last email was sent more than X min ago -- send another, if there are routes to send
+    else:
+        # get the congested routes
+        c = db.cursor()
+        sql = helper.sql_format('''SELECT routes_congested.route_id, current_tt_min, historical_tt_min,
+                        route_name, route_from, route_to, congested_date_time
+                        FROM routes_congested
+                        INNER JOIN routes ON routes_congested.route_id=routes.route_id''')
+
+        c.execute(sql)
+        congested_routes = c.fetchall()
+
+        if len(congested_routes) == 0:
+            logging.info("There are currently no congested routes. Not sending an email.")
+            return
+
+        logging.info(f"Congestion email was sent more than {config_email_delay} min ago, sending another one.")
+
+        try:
+            send_email.build_email(congested_routes)
+        except Exception as e:
+            logging.error(e)
 
 
 def process_data(uid, data, db):
@@ -203,8 +234,8 @@ def process_data(uid, data, db):
         route_details = (route_id, route_name, route_from, route_to, route_type, length, uid, feed_name, False)
 
         travel_time = (
-        route_id, current_tt, historical_tt, current_tt_min, historical_tt_min, congested_bool, CONGESTED_PERCENT,
-        jam_level, tt_date_time)
+            route_id, current_tt, historical_tt, current_tt_min, historical_tt_min, congested_bool, CONGESTED_PERCENT,
+            jam_level, tt_date_time)
 
         # write data
         try:
@@ -222,7 +253,6 @@ def feed_check_good(timestamp):
 
     feed_delay_error_time = config.getint("Settings", "FeedErrorInMin", fallback=30)
     if feed_delay_error_time != 0:  # skip error checking if feed_delay_error_time is 0
-        from datetime import datetime, timedelta
         time_delay = datetime.now() - timedelta(minutes=feed_delay_error_time)
         logging.debug(f"Checking if the feed is older than: {time_delay}")
 

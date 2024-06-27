@@ -8,7 +8,6 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
-from datetime import datetime, timedelta
 
 import helper
 
@@ -32,32 +31,12 @@ def get_email_users():
         return targets
 
 
-def build_email(db):
-    config_time_delay = config.getint("Settings", "CongestionEmailDelayInMin", fallback=10)
-    alert_time_delay = datetime.now() - timedelta(minutes=config_time_delay)
-    logging.debug(f"Alerting for congestion older than: {alert_time_delay}")
-
+def build_email(routes):
     string = '<html><head><style>table, th, td {border: 1px solid black;}</style></head><body>'
     string += '<table width="100%">'
     string += '<tr><th>RID</th><th>Road</th><th>To/From</th><th>Current Time</th><th>Historic Time</th><th>Since</th></tr>'
 
-    c = db.cursor()
-    sql = helper.sql_format('''SELECT routes_congested.route_id, current_tt_min, historical_tt_min, 
-                    route_name, route_from, route_to, congested_date_time
-                    FROM routes_congested
-                    INNER JOIN routes ON routes_congested.route_id=routes.route_id
-                    WHERE congested_date_time < ?''')
-
-    c.execute(sql, (alert_time_delay,))
-    all = c.fetchall()
-
-    if len(all) == 0:
-        logging.info("There are currently no congested routes. Not sending an email.")
-        return
-
-    logging.debug(f"Congested routes: {all}")
-
-    for each in all:
+    for each in routes:
         rid = each[0]
         c_min = each[1]
         h_min = each[2]
@@ -136,6 +115,14 @@ def run(subject, body, attach=None, type=None):
     server.sendmail(sender, get_email_users(), msg.as_string())
     server.quit()
     logging.info('Email sent')
+
+    # update the persistence file with the new datetime when the email was sent
+    import json
+    from datetime import datetime
+    json_file = helper.read_json()
+    with open(helper.get_persistence_path(), 'w') as f:
+        json_file['last_congestion_email'] = datetime.now().strftime(helper.time_format)
+        json.dump(json_file, f, indent=2)
 
 
 if __name__ == '__main__':
