@@ -1,38 +1,33 @@
 import logging
-import configparser
-import sqlite3
 import os
+import sqlite3
 
 import helper
 
-config = configparser.ConfigParser(allow_no_value=True)
-config.read(helper.get_config_path())
-
-USE_POSTGRES = config.getboolean('Postgres', 'use_postgres')
-if USE_POSTGRES:
-    import psycopg2
-
 
 class DatabaseConnection:
-    def __init__(self):
+    def __init__(self, config):
         self.dbconn = None
+        self.config = config
 
     def __enter__(self):
-        if USE_POSTGRES:
-            db_string = using_postgres()
+        use_postgres = self.config.getboolean('Postgres', 'use_postgres')
+        if use_postgres:
+            db_string = using_postgres(self.config)
+            import psycopg2
             self.dbconn = psycopg2.connect(**db_string)
         else:
-            db_string = using_sqlite()
+            db_string = using_sqlite(self.config)
             self.dbconn = sqlite3.connect(db_string)
-        logging.debug('Datbase open')
+        logging.debug('Database open')
         return self.dbconn
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.dbconn.close()
-        logging.debug('Datbase closed')
+        logging.debug('Database closed')
 
 
-def using_postgres():
+def using_postgres(config):
     host = str(config.get('Postgres', 'host'))
     database = str(config.get('Postgres', 'database'))
     user = str(config.get('Postgres', 'user'))
@@ -41,5 +36,5 @@ def using_postgres():
     return database_string
 
 
-def using_sqlite():
+def using_sqlite(config):
     return os.path.join(helper.get_db_path(), config['Settings']['DatabaseURL'])

@@ -1,15 +1,16 @@
-import configparser
 import json
 import os
 import sys
 from datetime import datetime
 
 config_file = 'config.ini'
-time_format = "%Y-%m-%d %H:%M:%S.%f"
+time_format = "%Y-%m-%d %H:%M:%S"
 
 
 def is_frozen():
     # determine if application is a script file or frozen exe
+    application_path = os.path.abspath('..')
+
     if getattr(sys, 'frozen', False):
         application_path = os.path.dirname(sys.executable)
     elif __file__:
@@ -18,8 +19,11 @@ def is_frozen():
     return application_path
 
 
-def get_config_path():
-    return os.path.join(is_frozen(), 'configs' + os.sep + config_file)
+def get_config_path(config_path=None):
+    if config_path is None:
+        return os.path.join(is_frozen(), 'configs' + os.sep + config_file)
+    else:
+        return config_path
 
 
 def get_config_folder_path():
@@ -49,7 +53,7 @@ def get_logging_filename():
 
 
 def timestamp_to_datetime(timestamp):
-    return datetime.fromtimestamp(timestamp / 1000.0).strftime(time_format)[:-3]
+    return datetime.fromtimestamp(timestamp / 1000.0).strftime(time_format)
 
 
 def time_to_minutes(time_now):
@@ -61,27 +65,24 @@ def check_for_data_integrity(data):
         raise Exception('Data did not pass the integrity check, cannot proceed')
 
 
-def get_skip_routes_list():
+def get_skip_routes_list(skip_routes):
     skip_list = []
-    skip_routes = config['SkipRoutes']
     for x in skip_routes:
         skip_list.append(int(x))
 
     return skip_list
 
 
-def get_omit_routes_list():
+def get_omit_routes_list(omit_routes):
     omit_list = []
-    omit_routes = config['OmitRoutes']
     for x in omit_routes:
         omit_list.append(int(x))
 
     return omit_list
 
 
-def get_omit_feed_list():
+def get_omit_feed_list(omit_routes):
     omit_list = []
-    omit_routes = config['OmitUids']
     for x in omit_routes:
         omit_list.append(x)
 
@@ -110,12 +111,7 @@ def read_json(file=None):
     return json_file
 
 
-config = configparser.ConfigParser(allow_no_value=True)
-config.read(get_config_path())
-
-
-def sql_format(sql):
-    use_postgres = config.getboolean('Postgres', 'use_postgres')
+def sql_format(sql, use_postgres):
     if use_postgres:
         sql = sql.replace("?", "%s")
         sql = sql.replace("0", "false")

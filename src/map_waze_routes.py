@@ -1,8 +1,14 @@
 #!/usr/bin/env
+import datetime
+import json
+import logging
+import sys
+import urllib.request
 
 # need to use Python3
 
 waze_url = ["https://www.waze.com/rtserver/broadcast/BroadcastRSS?buid={id}&format=JSON"]
+
 
 class Waze:
 
@@ -19,9 +25,9 @@ class Waze:
         self.geometry = {}
         self.feature = {}
 
-    def download(self, url):
+    def download(self, feed_url):
         try:
-            r = requests.get(url)
+            r = urllib.request.urlopen(feed_url, timeout=5).read().decode('utf-8')
 
             if r.status_code == 200:
                 self.json_before = r.json()
@@ -54,7 +60,8 @@ class Waze:
             self.create_features()
 
     def create_features(self):
-        self.feature = {"geometry": {"paths": [self.geometry], "spatialReference": {"wkid": 4326}}, "attributes": {"ColorCode": self.colorCounter, "Updated": str(self.date_time)}}
+        self.feature = {"geometry": {"paths": [self.geometry], "spatialReference": {"wkid": 4326}},
+                        "attributes": {"ColorCode": self.colorCounter, "Updated": str(self.date_time)}}
         self.features_list.append(self.feature)
         self.colorCounter = self.colorCounter + 1
         if self.colorCounter > 20:
@@ -65,11 +72,13 @@ class Waze:
         self.main_dict["routeCount"] = int(self.counter)
         self.main_dict["date"] = str(self.date_time)
         self.main_dict["geometryType"] = "esriGeometryPolyline"
-        self.main_dict["spatialReference"] = { "wkid": 4326 }
-        self.main_dict["fields"] = [ {"name": "OBJECTID", "type": "esriFieldTypeOID"}, {"name": "ColorCode", "type": "esriFieldTypeSmallInteger"}, {"name": "Updated", "type": "esriFieldTypeString"}]
+        self.main_dict["spatialReference"] = {"wkid": 4326}
+        self.main_dict["fields"] = [{"name": "OBJECTID", "type": "esriFieldTypeOID"},
+                                    {"name": "ColorCode", "type": "esriFieldTypeSmallInteger"},
+                                    {"name": "Updated", "type": "esriFieldTypeString"}]
         self.main_dict["features"] = self.features_list
 
-    def dump_json(self, filename):
+    def dump_json(self):
         with open('generated_map.json', 'w') as f:
             f.write(json.dumps(self.main_dict, indent=1))
 

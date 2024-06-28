@@ -1,5 +1,4 @@
 import base64
-import configparser
 import os
 import time
 from email import encoders
@@ -14,18 +13,15 @@ from oauth2client import client, tools, file
 
 import helper
 
-config = configparser.ConfigParser(allow_no_value=True)
-config.read(helper.get_config_path())
-
 SCOPES = 'https://www.googleapis.com/auth/gmail.send'
 CLIENT_SECRET_FILE = os.path.join(helper.get_config_folder_path(), r'client_secret.json')
 APPLICATION_NAME = 'Gmail API Python Send Email'
 FROM_EMAIL = 'Waze Travel Times <email@email.com>'
 
 
-def get_email_users():
+def get_email_users(email_users):
     targets = []
-    for user in config["Emails"]:
+    for user in email_users:
         targets.append(user)
 
     if not targets:
@@ -52,11 +48,11 @@ def get_credentials():
     return credentials
 
 
-def send_message(subject, body, attach=None, type=None):
+def send_message(email_subject, body, email_users, attach=None):
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('gmail', 'v1', http=http, cache_discovery=False)
-    message = create_message(subject, body, attach)
+    message = create_message(email_subject, body, email_users, attach)
     send_message_internal(service, "me", message)
 
 
@@ -65,15 +61,15 @@ def send_message_internal(service, user_id, message):
         message = (service.users().messages().send(userId=user_id, body=message).execute())
         print('Message Id: %s' % message['id'])
         return message
-    except errors.HttpError as error:
-        print('An error occurred: %s' % error)
+    except errors.HttpError as err:
+        print('An error occurred: %s' % err)
 
 
-def create_message(subject, body, attach=None, type=None):
+def create_message(email_subject, body, email_users, attach=None):
     message = MIMEMultipart()
-    message['to'] = get_email_users()
+    message['to'] = get_email_users(email_users)
     message['from'] = FROM_EMAIL
-    message['subject'] = subject
+    message['subject'] = email_subject
 
     message.attach(MIMEText(body, 'html'))
 
@@ -91,14 +87,25 @@ def create_message(subject, body, attach=None, type=None):
 
 
 if __name__ == '__main__':
+    import configparser
+    import options
+
+    # get command line arguments, if any
+    args = options.__args_parser('Waze Travel Times Poller')
+
+    # use config file, not database
+    config = configparser.ConfigParser(allow_no_value=True)
+    config.read(helper.get_config_path(args.config_path))
+
     # test email by running this file
     string = '<html><head><style>table, th, td {border: 1px solid black;}</style></head><body>'
     string += '<table width="50%">'
-    string += '<tr><th>RID</th><th>Road</th><th>To/From</th><th>Current Time</th><th>Historic Time</th><th>Since</th></tr>'
+    string += ('<tr><th>RID</th><th>Road</th><th>To/From</th><th>Current Time</th><th>Historic '
+               'Time</th><th>Since</th></tr>')
     string += '</table></body></html>'
 
     error = 'Travel Times'
     subject = f'Alert: TEST ({time.time()}) '
 
     # send_message("Test", string, attach='../logs/waze_errors.log')
-    send_message("Congestion Summary", string)
+    send_message("Congestion Summary", string, config['Emails'])

@@ -1,4 +1,3 @@
-import configparser
 import logging
 import os
 import smtplib
@@ -11,17 +10,10 @@ from email.utils import formataddr
 
 import helper
 
-config = configparser.ConfigParser(allow_no_value=True)
-config.read(helper.get_config_path())
 
-send_oath = config.getboolean("EmailSettings", "SendWithOath")
-if send_oath:
-    import send_email_oath
-
-
-def get_email_users():
+def get_email_users(email_users):
     targets = []
-    for user in config["Emails"]:
+    for user in email_users:
         targets.append(user)
 
     if not targets:
@@ -31,8 +23,8 @@ def get_email_users():
         return targets
 
 
-def build_email(routes):
-    string = ("""<html lang="en">
+def build_email(routes, config_file):
+    s = ("""<html lang="en">
                     <head>    
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -57,8 +49,8 @@ def build_email(routes):
                         </style>
                     </head>
                 <body>""")
-    string += '<table>'
-    string += '<tr><th>RID</th><th>Road</th><th>To/From</th><th>Current Time</th><th>Historic Time</th><th>Since</th></tr>'
+    s += '<table>'
+    s += '<tr><th>RID</th><th>Road</th><th>To/From</th><th>Current Time</th><th>Historic Time</th><th>Since</th></tr>'
 
     i = 1
     for each in routes:
@@ -72,59 +64,63 @@ def build_email(routes):
         ddate = each[6]
 
         if i % 2 == 0:
-            string += '<tr>'
+            s += '<tr>'
         else:
-            string += '<tr style="background-color:#e6f3ff">'
-        string += f'<td>{rid}</td>'
-        string += f'<td>{route_name}</td>'
-        string += f'<td>{route_from} to {route_to}</td>'
-        string += f'<td>{c_min}</td>'
-        string += f'<td>{h_min}</td>'
-        string += f'<td>{ddate}</td>'
-        string += '</tr>'
+            s += '<tr style="background-color:#e6f3ff">'
+        s += f'<td>{rid}</td>'
+        s += f'<td>{route_name}</td>'
+        s += f'<td>{route_from} to {route_to}</td>'
+        s += f'<td>{c_min}</td>'
+        s += f'<td>{h_min}</td>'
+        s += f'<td>{ddate}</td>'
+        s += '</tr>'
 
-    string += "</table>"
-    string += '</body></html>'
+    s += "</table>"
+    s += '</body></html>'
 
     # logging.debug(string)
 
     try:
-        subject = 'Congestion Summary'
+        email_subject = 'Congestion Summary'
 
+        send_oath = config_file.getboolean("EmailSettings", "SendWithOath")
         if send_oath:
             logging.info('Sending with oauth email')
-            send_email_oath.send_message(subject, string)
+            import send_email_oath
+            email_users = config['Emails']
+            send_email_oath.send_message(email_subject, s, email_users)
         else:
             logging.info('Sending with regular email')
-            run(subject, string, attach=None, type='html')
+            run(email_subject, s, config_file, attach=None, email_type='html')
 
     except Exception as e:
         logging.exception(e)
 
 
-def run(subject, body, attach=None, type=None):
-    EMAIL_USER = config["EmailSettings"]["Username"]
-    EMAIL_PWD = config["EmailSettings"]["Password"]
+def run(email_subject, body, config_file, attach=None, email_type=None):
+    email_username = config_file["EmailSettings"]["Username"]
+    email_pwd = config_file["EmailSettings"]["Password"]
+    email_users = config_file["Emails"]
 
-    if EMAIL_USER == '' or EMAIL_PWD == '':
+    if email_username == '' or email_pwd == '':
         raise Exception("You are missing email username or password")
 
     logging.info('Attempting to send email')
 
     # smtp_ssl_host = 'smtp.gmail.com'
-    smtp_ssl_host = config.get('EmailSettings', 'SMTP_SSL_Host')
-    smtp_ssl_port = config.getint('EmailSettings', 'SMTP_SSL_Port')
-    nickname = config.get('EmailSettings', 'From_Nickname')
-    sender = formataddr((nickname, config.get('EmailSettings', 'SMTP_Sender')))
+    smtp_ssl_host = config_file.get('EmailSettings', 'SMTP_SSL_Host')
+    smtp_ssl_port = config_file.getint('EmailSettings', 'SMTP_SSL_Port')
+    nickname = config_file.get('EmailSettings', 'From_Nickname')
+    sender = formataddr((nickname, config_file.get('EmailSettings', 'SMTP_Sender')))
     # targets = get_email_users()
 
     msg = MIMEMultipart()
 
-    msg['Subject'] = subject
+    msg['Subject'] = email_subject
     msg['From'] = sender
-    msg['To'] = ', '.join(get_email_users())
+    msg['To'] = ', '.join(get_email_users(email_users))
 
-    if type == 'html':
+    if email_type == 'html':
         msg.attach(MIMEText(body, 'html'))
     else:
         msg.attach(MIMEText(body, 'plain'))
@@ -140,8 +136,8 @@ def run(subject, body, attach=None, type=None):
         msg.attach(part)
 
     server = smtplib.SMTP_SSL(smtp_ssl_host, smtp_ssl_port)
-    server.login(EMAIL_USER, EMAIL_PWD)
-    server.sendmail(sender, get_email_users(), msg.as_string())
+    server.login(email_username, email_pwd)
+    server.sendmail(sender, get_email_users(email_users), msg.as_string())
     server.quit()
     logging.info('Email sent')
 
@@ -155,6 +151,16 @@ def run(subject, body, attach=None, type=None):
 
 
 if __name__ == '__main__':
+    import configparser
+    import options
+
+    # get command line arguments, if any
+    args = options.__args_parser('Waze Travel Times Poller')
+
+    # use config file, not database
+    config = configparser.ConfigParser(allow_no_value=True)
+    config.read(helper.get_config_path(args.config_path))
+
     # test email by running this file
     string = '<html><head><style>table, th, td {border: 1px solid black;}</style></head><body>'
     string += '<table width="50%">'
@@ -163,4 +169,4 @@ if __name__ == '__main__':
 
     error = 'Travel Times'
     subject = f'Alert: TEST ({time.time()}) '
-    run(subject, string, attach=None, type='html')
+    run(subject, string, config, attach=None, email_type='html')

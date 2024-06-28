@@ -1,12 +1,6 @@
-import configparser
 import json
 import logging
 import urllib.request
-
-import helper
-
-config = configparser.ConfigParser(allow_no_value=True)
-config.read(helper.get_config_path())
 
 
 def get_data_from_website(url):

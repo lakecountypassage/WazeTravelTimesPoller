@@ -9,31 +9,9 @@ import db_conn
 import deleted_routes
 import download_data
 import helper
+import options
 import route_errors
 import send_email
-
-# use config file, not database
-config = configparser.ConfigParser(allow_no_value=True)
-config.read(helper.get_config_path())
-
-ARCHIVE_DATA = config.getboolean('Settings', 'ArchiveData', fallback=True)
-CONGESTED_PERCENT = config.getint('Settings', 'CongestionPercent')
-CONGESTION_EMAIL = False
-
-# add logging
-with open(helper.get_log_config_path(), "r", encoding="utf-8") as f:
-    x = json.load(f)
-    log_filename = helper.get_logging_filename()[0]
-    log_error_filename = helper.get_logging_filename()[1]
-    x['handlers']['file']['filename'] = log_filename
-    x['handlers']['file_error']['filename'] = log_error_filename
-
-logging.config.dictConfig(x)
-
-logging.debug("<-------- Start -------->")
-
-logging.debug(f'Config path: {helper.get_config_path()}')
-logging.debug(f'Log config path: {helper.get_log_config_path()}')
 
 # SQL
 sql_routes_check = """SELECT route_id, feed_id, feed_name, deleted FROM routes WHERE route_id = ?"""
@@ -53,47 +31,47 @@ sql_congested_counter = """SELECT route_id FROM routes_congested"""
 sql_delete_bad_congestion = """DELETE FROM routes_congested WHERE congested_date_time < ?"""
 
 
-def write_routes(route_details, db):
+def write_routes(route_details):
     c = db.cursor()
     # insert route data
     try:
-        c.execute(helper.sql_format(sql_routes_check), (route_details[0],))
+        c.execute(helper.sql_format(sql_routes_check, USE_POSTGRES), (route_details[0],))
         r = c.fetchone()
 
         if r is None:
             logging.debug(route_details)
-            c.execute(helper.sql_format(sql_routes_insert), route_details)
+            c.execute(helper.sql_format(sql_routes_insert, USE_POSTGRES), route_details)
 
         else:
             # update deleted column
             if r[3] or r[3] is None:
-                c.execute(helper.sql_format(sql_delete_update), (route_details[8], route_details[0]))
+                c.execute(helper.sql_format(sql_delete_update, USE_POSTGRES), (route_details[8], route_details[0]))
 
             # add feed id and name if they don't exist
             if r[1] is None or r[2] is None:
                 logging.debug('updating route to include feed id and name')
                 route_update = (route_details[6], route_details[7], route_details[0])
-                c.execute(helper.sql_format(sql_route_update), route_update)
+                c.execute(helper.sql_format(sql_route_update, USE_POSTGRES), route_update)
 
-    except Exception as e:
-        logging.exception(e)
+    except Exception as ex:
+        logging.exception(ex)
         pass
 
 
-def write_data(travel_time, db):
+def write_data(travel_time):
     c = db.cursor()
     # insert travel time data
     try:
         logging.info(travel_time)
-        c.execute(helper.sql_format(sql_write_tt), travel_time)
-    except Exception as e:
-        logging.exception(e)
+        c.execute(helper.sql_format(sql_write_tt, USE_POSTGRES), travel_time)
+    except Exception as ex:
+        logging.exception(ex)
         pass
 
 
-def congestion_table(congested, route_id, congested_date_time, current_tt_min, historical_tt_min, omit, db):
+def congestion_table(congested, route_id, congested_date_time, current_tt_min, historical_tt_min, omit):
     c = db.cursor()
-    c.execute(helper.sql_format(sql_congested_check), (route_id,))
+    c.execute(helper.sql_format(sql_congested_check, USE_POSTGRES), (route_id,))
     one = c.fetchone()
 
     # remove routes in table if omit
@@ -101,24 +79,25 @@ def congestion_table(congested, route_id, congested_date_time, current_tt_min, h
         logging.debug(f"Omitting routes from congestion alerting: {route_id}")
         if one is not None:
             logging.debug(f"Removing omitted from congestion table: {route_id}")
-            c.execute(helper.sql_format(sql_congested_remove), (route_id,))
+            c.execute(helper.sql_format(sql_congested_remove, USE_POSTGRES), (route_id,))
     else:
         if one is None:
             if congested:
-                c.execute(helper.sql_format(sql_congested_insert),
+                c.execute(helper.sql_format(sql_congested_insert, USE_POSTGRES),
                           (route_id, congested_date_time, current_tt_min, historical_tt_min))
         else:
             logging.debug(f'exists in congestion db: {route_id}')
             if congested:
                 logging.debug(f'continues to be congested: {route_id}')
-                c.execute(helper.sql_format(sql_congested_update), (current_tt_min, historical_tt_min, route_id))
+                c.execute(helper.sql_format(sql_congested_update, USE_POSTGRES),
+                          (current_tt_min, historical_tt_min, route_id))
             else:
-                c.execute(helper.sql_format(sql_congested_remove), (route_id,))
+                c.execute(helper.sql_format(sql_congested_remove, USE_POSTGRES), (route_id,))
 
 
 def delete_bad_congestion():
-    delete_bad_congestion_time_delay = config.getint("Settings", "DeleteStaleCongstedRoutesInMin", fallback=120)
-    logging.debug(f"DeleteStaleCongstedRoutesInMin = {delete_bad_congestion_time_delay}")
+    delete_bad_congestion_time_delay = config.getint("Settings", "DeleteStaleCongestedRoutesInMin", fallback=120)
+    logging.debug(f"DeleteStaleCongestedRoutesInMin = {delete_bad_congestion_time_delay}")
     if delete_bad_congestion_time_delay == 0:
         logging.info("Not attempting to delete bad congestion routes.")
         return
@@ -127,7 +106,7 @@ def delete_bad_congestion():
     logging.info(f"Deleting any bad congestion older than: {time_delay}")
     try:
         c = db.cursor()
-        sql = helper.sql_format(sql_delete_bad_congestion)
+        sql = helper.sql_format(sql_delete_bad_congestion, USE_POSTGRES)
         c.execute(sql, (time_delay,))
     except Exception as ex:
         logging.exception(ex)
@@ -136,10 +115,10 @@ def delete_bad_congestion():
 def send_congestion_email():
     # send email
     if config.getboolean('EmailSettings', 'SendEmailAlerts', fallback=False) is False:
-        logging.info('Emails are turned off in the cofiguration file.')
+        logging.info('Emails are turned off in the configuration file.')
         return
 
-    if send_email.get_email_users() is None:
+    if send_email.get_email_users(config['Emails']) is None:
         logging.info('Emails are not sending, you have no user recipients.')
         return
 
@@ -149,10 +128,10 @@ def send_congestion_email():
     # if last sent email is older than now - 10min
     if last_congestion_email > datetime.now() - timedelta(minutes=config_email_delay):
 
-        logging.debug(
-            f"Last congestion email was sent at: {last_congestion_email}. "
-            f"Won't send another for email for "
-            f"{config_email_delay - int((datetime.now() - last_congestion_email).total_seconds() / 60)} minute/s.")
+        logging.debug(f"Last congestion email was sent at: {last_congestion_email}. "
+                      f"Won't send another for email for "
+                      f"{config_email_delay - int((datetime.now() - last_congestion_email).total_seconds() / 60)}"
+                      f" minute/s.")
 
     # last email was sent more than X min ago -- send another, if there are routes to send
     else:
@@ -166,7 +145,7 @@ def send_congestion_email():
                         route_name, route_from, route_to, congested_date_time
                         FROM routes_congested
                         INNER JOIN routes ON routes_congested.route_id=routes.route_id
-                        WHERE congested_date_time < ?''')
+                        WHERE congested_date_time < ?''', USE_POSTGRES)
 
         c.execute(sql, (route_alert_delay_time,))
         congested_routes = c.fetchall()
@@ -178,12 +157,12 @@ def send_congestion_email():
         logging.info(f"Congestion email was sent more than {config_email_delay} min ago, sending another one.")
 
         try:
-            send_email.build_email(congested_routes)
-        except Exception as e:
-            logging.error(e)
+            send_email.build_email(congested_routes, config)
+        except Exception as ex:
+            logging.error(ex)
 
 
-def process_data(uid, data, db):
+def process_data(buid, data):
     counter = 0
 
     tt_date_time = helper.timestamp_to_datetime(data['updateTime'])
@@ -225,16 +204,16 @@ def process_data(uid, data, db):
             route_errors.set_route_errors(route_id, route_name, add=False)
 
         omit = False
-        if route_id in omit_routes or uid in omit_feeds:
+        if route_id in omit_routes or buid in omit_feeds:
             omit = True
 
         current_tt_min = helper.time_to_minutes(current_tt)
         historical_tt_min = helper.time_to_minutes(historical_tt)
 
         congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
-        congestion_table(congested_bool, route_id, tt_date_time, int(current_tt_min), int(historical_tt_min), omit, db)
+        congestion_table(congested_bool, route_id, tt_date_time, int(current_tt_min), int(historical_tt_min), omit)
 
-        route_details = (route_id, route_name, route_from, route_to, route_type, length, uid, feed_name, False)
+        route_details = (route_id, route_name, route_from, route_to, route_type, length, buid, feed_name, False)
 
         travel_time = (
             route_id, current_tt, historical_tt, current_tt_min, historical_tt_min, congested_bool, CONGESTED_PERCENT,
@@ -242,11 +221,11 @@ def process_data(uid, data, db):
 
         # write data
         try:
-            write_routes(route_details, db)
+            write_routes(route_details)
             if ARCHIVE_DATA:
-                write_data(travel_time, db)
-        except Exception as e:
-            logging.exception(e)
+                write_data(travel_time)
+        except Exception as ex:
+            logging.exception(ex)
 
     logging.info(f"Route counter: {counter}")
 
@@ -272,18 +251,19 @@ def feed_check_good(timestamp):
                 if send_oath:
                     logging.info('Sending with oauth email')
                     import send_email_oath
-                    send_email_oath.send_message(subject, text)
+                    email_users = config["Emails"]
+                    send_email_oath.send_message(subject, text, email_users)
                 else:
                     logging.info('Sending with regular email')
-                    send_email.run(subject, text)
+                    send_email.run(subject, text, config)
 
-            except Exception as e:
-                logging.exception(e)
+            except Exception as ex:
+                logging.exception(ex)
 
     return is_feed_good
 
 
-def run(url, uid, db):
+def run(url, buid):
     # get data from website
     data = download_data.get_data_from_website(url)
     timestamp = int(data['updateTime'])
@@ -295,48 +275,75 @@ def run(url, uid, db):
     # check to make sure data is good before proceeding
     try:
         helper.check_for_data_integrity(data)
-    except Exception as e:
-        logging.exception(e)
+    except Exception as ex:
+        logging.exception(ex)
         raise
 
     if feed_check_good(timestamp):
-        process_data(uid, data, db)
+        process_data(buid, data)
     else:
         logging.error("Something is wrong with the feed, skipping processing.")
 
 
 if __name__ == '__main__':
 
+    # get command line arguments, if any
+    args = options.__args_parser('Waze Travel Times Poller')
+
+    # use config file, not database
+    config = configparser.ConfigParser(allow_no_value=True)
+    config.read(helper.get_config_path(args.config_path))
+
+    USE_POSTGRES = config.getboolean('Postgres', 'use_postgres', fallback=False)
+    ARCHIVE_DATA = config.getboolean('Settings', 'ArchiveData', fallback=True)
+    CONGESTED_PERCENT = config.getint('Settings', 'CongestionPercent')
+    CONGESTION_EMAIL = False
+
+    # add logging
+    with open(helper.get_log_config_path(), "r", encoding="utf-8") as f:
+        x = json.load(f)
+        log_filename = helper.get_logging_filename()[0]
+        log_error_filename = helper.get_logging_filename()[1]
+        x['handlers']['file']['filename'] = log_filename
+        x['handlers']['file_error']['filename'] = log_error_filename
+
+    logging.config.dictConfig(x)
+
+    logging.debug("<-------- Start -------->")
+
+    logging.debug(f'Config path: {helper.get_config_path()}')
+    logging.debug(f'Log config path: {helper.get_log_config_path()}')
+
     logging.info(f'Congested percent: {CONGESTED_PERCENT}')
 
     waze_url_uids = config["WazeUIDS"]
     waze_url_prefix = config['Settings']['WazeURLPrefix']
 
-    skip_routes = helper.get_skip_routes_list()
+    skip_routes = helper.get_skip_routes_list(config['SkipRoutes'])
     logging.info(f'Skip these routes completely: {skip_routes}')
     route_errors.remove_deleted_routes(skip_routes)
 
-    omit_routes = helper.get_omit_routes_list()
+    omit_routes = helper.get_omit_routes_list(config['OmitRoutes'])
     logging.info(f'Omit these routes from congestion alerting: {omit_routes}')
 
-    omit_feeds = helper.get_omit_feed_list()
+    omit_feeds = helper.get_omit_feed_list(config['OmitUids'])
     logging.info(f'Omit these feeds from congestion alerting: {omit_feeds}')
 
     route_list = []
 
-    with db_conn.DatabaseConnection() as db:
+    with db_conn.DatabaseConnection(config) as db:
         for uid in waze_url_uids:
             full_url = f"{waze_url_prefix}{uid}"
             logging.info(f'Waze URL: {full_url}')
 
             try:
-                run(full_url, uid, db)
+                run(full_url, uid)
             except Exception as e:
                 logging.exception(e)
                 continue
 
         # run route error counter check after processing the data
-        route_errors.route_error_counter()
+        route_errors.route_error_counter(config)
 
         check_deleted = config.getboolean('Settings', 'CheckForDeleted')
         logging.debug(f'Check for deleted routes: {check_deleted}')
@@ -345,10 +352,10 @@ if __name__ == '__main__':
                 # check for deleted routes
                 # deleted_routes.set_route_list(route_list)
                 del_routes = deleted_routes.DeletedRoutes(db, route_list)
-                del_routes.run()
+                del_routes.run(USE_POSTGRES)
 
                 # remove deleted routes from persistence
-                route_errors.remove_deleted_routes(del_routes.get_deleted_routes())
+                route_errors.remove_deleted_routes(del_routes.get_deleted_routes(USE_POSTGRES))
             except Exception as e:
                 logging.exception(e)
 
