@@ -32,11 +32,37 @@ def get_email_users():
 
 
 def build_email(routes):
-    string = '<html><head><style>table, th, td {border: 1px solid black;}</style></head><body>'
-    string += '<table width="100%">'
+    string = ("""<html lang="en">
+                    <head>    
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <style>
+                            table, th, td {
+                              border: 1px solid #ddd;
+                              border-collapse: collapse;
+                            }
+                            table {
+                                background-color: white;
+                                overflow: hidden;
+                                font-size:85%;
+                            }
+                            th, td {
+                                padding: 5px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #4a6b8a;  /* Lighter blue-grey color */
+                                color: white;
+                            }
+                        </style>
+                    </head>
+                <body>""")
+    string += '<table>'
     string += '<tr><th>RID</th><th>Road</th><th>To/From</th><th>Current Time</th><th>Historic Time</th><th>Since</th></tr>'
 
+    i = 1
     for each in routes:
+        i += 1
         rid = each[0]
         c_min = each[1]
         h_min = each[2]
@@ -45,7 +71,10 @@ def build_email(routes):
         route_to = each[5]
         ddate = each[6]
 
-        string += '<tr>'
+        if i % 2 == 0:
+            string += '<tr>'
+        else:
+            string += '<tr style="background-color:#e6f3ff">'
         string += f'<td>{rid}</td>'
         string += f'<td>{route_name}</td>'
         string += f'<td>{route_from} to {route_to}</td>'
@@ -67,7 +96,7 @@ def build_email(routes):
             send_email_oath.send_message(subject, string)
         else:
             logging.info('Sending with regular email')
-            run('Congestion Summary', string, attach=None, type='html')
+            run(subject, string, attach=None, type='html')
 
     except Exception as e:
         logging.exception(e)
