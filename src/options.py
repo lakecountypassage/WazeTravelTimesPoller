@@ -2,7 +2,7 @@ import argparse
 
 
 def __add_options(parser):
-    parser.add_argument("--config_path", dest='config_path', default='..\\configs\\config.ini',
+    parser.add_argument("--config_path", dest='config_path', default=None,
                         help='Different location for configuration file.')
 
     return parser
