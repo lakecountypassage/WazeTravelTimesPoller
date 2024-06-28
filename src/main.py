@@ -156,14 +156,19 @@ def send_congestion_email():
 
     # last email was sent more than X min ago -- send another, if there are routes to send
     else:
+        config_route_alert_delay = config.getint("Settings", "CongestionRouteAlertDelay", fallback=10)
+        route_alert_delay_time = datetime.now() - timedelta(minutes=config_route_alert_delay)
+        logging.info(f"Routes congested after {route_alert_delay_time} are not considered for alert email yet.")
+
         # get the congested routes
         c = db.cursor()
         sql = helper.sql_format('''SELECT routes_congested.route_id, current_tt_min, historical_tt_min,
                         route_name, route_from, route_to, congested_date_time
                         FROM routes_congested
-                        INNER JOIN routes ON routes_congested.route_id=routes.route_id''')
+                        INNER JOIN routes ON routes_congested.route_id=routes.route_id
+                        WHERE congested_date_time < ?''')
 
-        c.execute(sql)
+        c.execute(sql, (route_alert_delay_time,))
         congested_routes = c.fetchall()
 
         if len(congested_routes) == 0:
