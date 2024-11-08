@@ -62,7 +62,7 @@ def time_to_minutes(time_now):
 
 def check_for_data_integrity(data):
     if any([data['updateTime'] == 0, data['updateTime'] == '']):
-        raise Exception('Data did not pass the integrity check, cannot proceed')
+        raise Exception('Data did not pass the integrity check, cannot proceed. Feed update time is 0 or empty.')
 
 
 def get_skip_routes_list(skip_routes):

@@ -23,12 +23,14 @@ sql_write_tt = """INSERT INTO travel_times (route_id, current_tt, historical_tt,
                    congested_bool, congested_percent, jam_level, tt_date_time) VALUES (?,?,?,?,?,?,?,?,?)"""
 
 sql_congested_check = """SELECT route_id FROM routes_congested WHERE route_id = ?"""
-sql_congested_insert = """INSERT INTO routes_congested (route_id, congested_date_time, 
-                        current_tt_min, historical_tt_min) VALUES (?,?,?,?)"""
+
+sql_congested_insert = """INSERT INTO routes_congested (route_id, route_name, route_from, route_to, congested_date_time, 
+                            current_tt_min, historical_tt_min, waze_irregular) VALUES (?,?,?,?,?,?,?,?)"""
 sql_congested_update = """UPDATE routes_congested SET current_tt_min = ?, historical_tt_min = ? WHERE route_id = ?"""
 sql_congested_remove = """DELETE FROM routes_congested WHERE route_id = ?"""
 sql_congested_counter = """SELECT route_id FROM routes_congested"""
 sql_delete_bad_congestion = """DELETE FROM routes_congested WHERE congested_date_time < ?"""
+sql_delete_irregular_congestion = """DELETE FROM routes_congested WHERE waze_irregular = True"""
 
 
 def write_routes(route_details):
@@ -69,7 +71,8 @@ def write_data(travel_time):
         pass
 
 
-def congestion_table(congested, route_id, congested_date_time, current_tt_min, historical_tt_min, omit):
+def congestion_table(congested, route_id, route_name, route_from, route_to, congested_date_time,
+                     current_tt_min, historical_tt_min, omit, waze_irregular=False):
     c = db.cursor()
     c.execute(helper.sql_format(sql_congested_check, USE_POSTGRES), (route_id,))
     one = c.fetchone()
@@ -81,10 +84,11 @@ def congestion_table(congested, route_id, congested_date_time, current_tt_min, h
             logging.debug(f"Removing omitted from congestion table: {route_id}")
             c.execute(helper.sql_format(sql_congested_remove, USE_POSTGRES), (route_id,))
     else:
-        if one is None:
+        if one is None or waze_irregular: # irregular routes are not checked if they exist since they might have overlapping IDs
             if congested:
                 c.execute(helper.sql_format(sql_congested_insert, USE_POSTGRES),
-                          (route_id, congested_date_time, current_tt_min, historical_tt_min))
+                          (route_id, route_name, route_from, route_to, congested_date_time,
+                           current_tt_min, historical_tt_min, waze_irregular))
         else:
             logging.debug(f'exists in congestion db: {route_id}')
             if congested:
@@ -140,12 +144,12 @@ def send_congestion_email():
         logging.info(f"Routes congested after {route_alert_delay_time} are not considered for alert email yet.")
 
         # get the congested routes
+        # irregular routes are NOT delayed in sending -- once it's irregular it's a part of the congestion email
         c = db.cursor()
-        sql = helper.sql_format('''SELECT routes_congested.route_id, current_tt_min, historical_tt_min,
-                        route_name, route_from, route_to, congested_date_time
+        sql = helper.sql_format('''SELECT route_id, current_tt_min, historical_tt_min,
+                        route_name, route_from, route_to, congested_date_time, waze_irregular
                         FROM routes_congested
-                        INNER JOIN routes ON routes_congested.route_id=routes.route_id
-                        WHERE congested_date_time < ?''', USE_POSTGRES)
+                        WHERE congested_date_time < ? or waze_irregular = True''', USE_POSTGRES)
 
         c.execute(sql, (route_alert_delay_time,))
         congested_routes = c.fetchall()
@@ -162,7 +166,7 @@ def send_congestion_email():
             logging.error(ex)
 
 
-def process_data(buid, data):
+def process_data(data, buid=''):
     counter = 0
 
     tt_date_time = helper.timestamp_to_datetime(data['updateTime'])
@@ -211,7 +215,8 @@ def process_data(buid, data):
         historical_tt_min = helper.time_to_minutes(historical_tt)
 
         congested_bool = helper.check_congestion(current_tt, historical_tt, CONGESTED_PERCENT)
-        congestion_table(congested_bool, route_id, tt_date_time, int(current_tt_min), int(historical_tt_min), omit)
+        congestion_table(congested_bool, route_id, route_name, route_from, route_to,
+                         tt_date_time, int(current_tt_min), int(historical_tt_min), omit)
 
         route_details = (route_id, route_name, route_from, route_to, route_type, length, buid, feed_name, False)
 
@@ -221,8 +226,8 @@ def process_data(buid, data):
 
         # write data
         try:
-            write_routes(route_details)
             if ARCHIVE_DATA:
+                write_routes(route_details)
                 write_data(travel_time)
         except Exception as ex:
             logging.exception(ex)
@@ -230,59 +235,102 @@ def process_data(buid, data):
     logging.info(f"Route counter: {counter}")
 
 
-def feed_check_good(timestamp):
-    is_feed_good = True
+def process_irregularities(data):
+    counter = 0
+    irregular_congestion_alert = config.getboolean('IrregularitiesWazeUIDS', 'AlertForWazeIrregularCongestion', fallback=False)
+    tt_date_time = helper.timestamp_to_datetime(data['updateTime'])
 
+    logging.info('Processing irregular routes')
+
+    # parse out only routes
+    routes = data['irregularities']
+    for route in routes:
+        counter += 1
+        route_id = route['id']
+        route_name = route['name']
+        route_from = route['fromName']
+        route_to = route['toName']
+
+        current_tt = route['time']
+        historical_tt = route['historicTime']
+
+        current_tt_min = helper.time_to_minutes(current_tt)
+        historical_tt_min = helper.time_to_minutes(historical_tt)
+
+        logging.debug(f"{route_name}, {route_from} to {route_to} -- Current: {current_tt_min} Historical: {historical_tt_min}")
+
+        if irregular_congestion_alert:
+            congestion_table(True, route_id, route_name, route_from, route_to,
+                             tt_date_time, int(current_tt_min), int(historical_tt_min), False, waze_irregular=True)
+
+
+def feed_check_good(timestamp, buid):
+    '''
+    Use 0 in the FeedErrorInMin to skip this check
+    :param timestamp:
+    :param buid:
+    :return:
+    '''
     feed_delay_error_time = config.getint("Settings", "FeedErrorInMin", fallback=30)
-    if feed_delay_error_time != 0:  # skip error checking if feed_delay_error_time is 0
+    if feed_delay_error_time != 0:  # skip error checking if FeedErrorInMin is 0
         time_delay = datetime.now() - timedelta(minutes=feed_delay_error_time)
         logging.debug(f"Checking if the feed is older than: {time_delay}")
 
         if datetime.fromtimestamp(timestamp / 1000.0) < time_delay:
-            is_feed_good = False
+            text = (f'Cannot process data. '
+                    f'It has been over {feed_delay_error_time} min since the last Waze feed update to feed {buid}. '
+                    f'Change time delay in settings if you want to allow older data.')
 
-            text = f'It has been over {feed_delay_error_time} min since the last Waze feed update to {uid}.'
-            logging.error(text)
-
-            send_oath = config.getboolean("EmailSettings", "SendWithOath")
-            try:
-                subject = 'Feed Error'
-
-                if send_oath:
-                    logging.info('Sending with oauth email')
-                    import send_email_oath
-                    email_users = config["Emails"]
-                    send_email_oath.send_message(subject, text, email_users)
-                else:
-                    logging.info('Sending with regular email')
-                    send_email.run(subject, text, config)
-
-            except Exception as ex:
-                logging.exception(ex)
-
-    return is_feed_good
+            raise Exception(text)
 
 
-def run(url, buid):
-    # get data from website
-    data = download_data.get_data_from_website(url)
+def get_data(url=None, file=None):
+    data = {"updateTime": 0}
+
+    if url is not None:
+        # get data from website
+        data = download_data.get_data_from_website(url)
+
+    elif file is not None:
+        # load data from file
+        logging.debug(file)
+        try:
+            with open(file) as f:
+                data = json.load(f)
+        except Exception as e:
+            logging.exception(e)
+
     timestamp = int(data['updateTime'])
     tt_date_time = helper.timestamp_to_datetime(timestamp)
 
     logging.info(f"Waze feed Epoch Time: {timestamp}")
     logging.info(f'Waze feed Date/Time : {tt_date_time}')
 
+    return data, timestamp
+
+
+def check_data(data, timestamp, buid=''):
     # check to make sure data is good before proceeding
     try:
         helper.check_for_data_integrity(data)
-    except Exception as ex:
-        logging.exception(ex)
-        raise
+        feed_check_good(timestamp, buid)
+    except Exception as e:
+        send_oath = config.getboolean("EmailSettings", "SendWithOath")
+        try:
+            subject = 'Feed Error'
+            if send_oath:
+                logging.info('Sending with oauth email')
+                import send_email_oath
+                email_users = config["Emails"]
+                send_email_oath.send_message(subject, str(e), email_users)
+            else:
+                logging.info('Sending with regular email')
+                send_email.run(subject, str(e), config)
 
-    if feed_check_good(timestamp):
-        process_data(buid, data)
-    else:
-        logging.error("Something is wrong with the feed, skipping processing.")
+        except Exception as ex:
+            logging.exception(ex)
+
+        raise
 
 
 if __name__ == '__main__':
@@ -331,16 +379,37 @@ if __name__ == '__main__':
 
     route_list = []
 
-    with db_conn.DatabaseConnection(config) as db:
-        for uid in waze_url_uids:
-            full_url = f"{waze_url_prefix}{uid}"
-            logging.info(f'Waze URL: {full_url}')
+    irregular_feeds = config["IrregularitiesWazeUIDS"]
 
-            try:
-                run(full_url, uid)
-            except Exception as e:
-                logging.exception(e)
-                continue
+    with db_conn.DatabaseConnection(config) as db:
+
+        # delete all irregular congestion -- need to do this each time so they don't persist
+        db.cursor().execute(helper.sql_format(sql_delete_irregular_congestion, USE_POSTGRES))
+
+        # used for testing against files
+        if args.testing_file is not None:
+            data, timestamp = get_data(file=args.testing_file)
+            check_data(data=data, timestamp=timestamp)
+            process_data(data)
+            process_irregularities(data)
+
+        else:
+            # run with the feed URLs from the config file
+            for uid in waze_url_uids:
+                full_url = f"{waze_url_prefix}{uid}"
+                logging.info(f'Waze URL: {full_url}')
+
+                try:
+                    data, timestamp = get_data(url=full_url)
+                    check_data(data=data, timestamp=timestamp, buid=uid)
+                    process_data(data, buid=uid)
+
+                    if uid in irregular_feeds:
+                        process_irregularities(data)
+
+                except Exception as e:
+                    logging.exception(e)
+                    continue
 
         # run route error counter check after processing the data
         route_errors.route_error_counter(config)

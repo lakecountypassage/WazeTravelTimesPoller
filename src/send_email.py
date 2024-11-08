@@ -50,18 +50,19 @@ def build_email(routes, config_file):
                     </head>
                 <body>""")
     s += '<table>'
-    s += '<tr><th>RID</th><th>Road</th><th>To/From</th><th>Current Time</th><th>Historic Time</th><th>Since</th></tr>'
+    s += '<tr><th>RID</th><th>Road</th><th>To/From</th><th>Current Time</th><th>Historic Time</th><th>Since</th><th>Waze Irregular</th></tr>'
 
     i = 1
-    for each in routes:
+    for route in routes:
         i += 1
-        rid = each[0]
-        c_min = each[1]
-        h_min = each[2]
-        route_name = each[3]
-        route_from = each[4]
-        route_to = each[5]
-        ddate = each[6]
+        rid = route[0]
+        c_min = route[1]
+        h_min = route[2]
+        route_name = route[3]
+        route_from = route[4]
+        route_to = route[5]
+        ddate = route[6]
+        waze_irregular = route[7]
 
         if i % 2 == 0:
             s += '<tr>'
@@ -73,6 +74,7 @@ def build_email(routes, config_file):
         s += f'<td>{c_min}</td>'
         s += f'<td>{h_min}</td>'
         s += f'<td>{ddate}</td>'
+        s += f'<td>{waze_irregular}</td>'
         s += '</tr>'
 
     s += "</table>"
