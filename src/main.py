@@ -259,6 +259,11 @@ def process_irregularities(data):
 
         logging.debug(f"{route_name}, {route_from} to {route_to} -- Current: {current_tt_min} Historical: {historical_tt_min}")
 
+        # skip congestion alerting for travel times when they dont have good data
+        if current_tt_min == 0 or historical_tt_min == 0:
+            logging.debug('Current or historical travel time is 0, not archving.')
+            continue
+
         if irregular_congestion_alert:
             congestion_table(True, route_id, route_name, route_from, route_to,
                              tt_date_time, int(current_tt_min), int(historical_tt_min), False, waze_irregular=True)
